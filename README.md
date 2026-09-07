@@ -6,25 +6,28 @@ Brand is the Stabledash Live freeze-frame: midnight `#11100e` / charcoal `#1a1c1
 
 Claims in `public/claims.json` stay denser (~31 rows, 4 `verified: true`). `verified: true` only for Whisper / Ovitz tape. Never invented. Dual keys (`storefront` / `storefrontId`, etc.) still load.
 
-## Loop
+## Experience lock (product canon)
 
-**Arrive → pick a door → 20–40s playable beat → earn the cited punchline → share the ghost.**
+**Value:** feel how modern money moves in under a minute, taught by real Live guests.  
+**Fantasy:** citizen on the block on a Live night. Shops are topics, not menus.  
+**Loop:** arrive (~8s thesis) → pick a door → 20–40s playable beat → earn the cited punchline + episode link → share Settlement Run ghost time.
 
-1. Title sheet (Stabledash Live energy) → ~8s first-run hook on the street.
-2. Four doors. Each **teaches by doing**, then unlocks one attributed claim:
-   - **Stablecoin Shop** — peg-keep: defend $1.00 through redemption waves.
-   - **Rails Station** — pick/compare ACH vs cards vs USDC.
-   - **Policy Desk** — send without a sim (no undo) vs simulate first.
-   - **Agent Pay Arcade** — Settlement Run starts immediately. First 8 seconds are the trailer (lane names, depeg / compliance, USDC clear). **No guest claim until you settle.** Ghost in `localStorage`.
-3. Punchline is **Guest said…** + episode cite. Verified-tape badge only when `verified: true`. Optional YouTube **link-out**, no embeds.
+| Door | Teaches (mechanic first) | Rewards (cite after) | Outcome |
+| --- | --- | --- | --- |
+| Stablecoin Shop | Peg-keep: defend $1.00 through 3 redemption waves | Guest line + episode link | 24/7 dollars vs bank hours |
+| Rails Station | Play ACH, cards, **and** USDC for Sat 2am | Guest line + episode link | Cards vs rails vs on-chain |
+| Policy Desk | Send without sim → no undo; reset; simulate; send | Guest line + episode link | Settlement can fail / sim-undo |
+| Agent Pay Arcade | Corridor run starts immediately. 8s trailer. **No claim on the HUD** | Punchline + ghost share after settle | Agent-pay corridor |
 
-New Live night → new claims in the same block. The street does not change.
+Cut: quote museums, empty voids, storefront → text wall with no mechanic. Brand tokens serve this loop.
+
+New Live night → new rows in the same `claims.json`. The street does not change.
 
 ## What changed in this pass
 
 - Design Expert canon: charcoal storefront mass, midnight roofs, gray trim, ivory glass ~10%, one lime practical per door (thin fixture + sign-on). Ivory-tinted key, charcoal fill, midnight ambient 0.22, cool charcoal haze. Splash matches the Live site (12PM ET, site lede, 250+ / 10M+ / 10,000+). Sparse one-card HUD. No lime wash, no amber, no second palette.
 - First-run onboard (~8s). Skip + reduced-motion skip. Remembered in `localStorage` (`mmd-onboard-v1`).
-- Teach-then-reward storefronts. Claim panels no longer open cold.
+- Teach-then-reward storefronts. Claim panels no longer open cold. Rails require all three rails before the cite.
 - Arcade trailer polish + punchline on the result sheet (copy time to share).
 - Phone HUD: virtual stick, tap-to-enter, large beat buttons. Desktop controls stay on the left.
 

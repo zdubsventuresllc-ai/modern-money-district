@@ -158,7 +158,7 @@ export function createBeats(root: {
         rails.seen.add(act);
         root.status.textContent = lines[act];
         renderRails();
-        maybeComplete(active, rails.seen.has("usdc") && rails.seen.size >= 2);
+        maybeComplete(active, rails.seen.size >= 3);
       }
       return;
     }
