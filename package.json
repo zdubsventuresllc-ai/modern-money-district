@@ -7,14 +7,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "start": "serve dist -l tcp://0.0.0.0:${PORT:-4173}"
+    "preview": "vite preview"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "serve": "^14.2.4",
     "three": "^0.170.0"
   },
   "devDependencies": {

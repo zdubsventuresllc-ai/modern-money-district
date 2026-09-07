@@ -2,7 +2,7 @@
 
 Stabledash lab spike: a **small walkable Three.js city block** (not an open world) and an **Agent Pay Arcade** settlement-run. Overnight playable prototype. Terminal / data-brutalism. Amber on black.
 
-Claims in `public/claims.json` are grounded in **Stabledash Live Ep 56** (2026-09-03) plus the 8/20 Tenderly extract. Quotes are not rewritten. Prefer `verified: true` in the UI; `verified: false` is never presented as tape and is badged **product framing / confirm on-air**.
+Claims in `data/claims.json` (served via `public/claims.json`) cover ~7–8 Stabledash Live episodes. `verified:true` only for Whisper/Ovitz-locked tape; titles-as-claims are `verified:false` (locked title positioning). Do not invent verified quotes. Live sponsor billboards load from Stabledash CDN with canvas text fallback.
 
 ## What shipped
 
@@ -42,47 +42,21 @@ npm run build
 npm run preview
 ```
 
-`npm run build` typechecks, then writes a static site to `dist/`. `npm run preview` serves that `dist/` on port **8766**.
+`npm run build` typechecks, then writes a static site to `dist/`.
 
 ## Claims schema
 
-Loader accepts dual field names (`storefront` ↔ `storefrontId`, `guest` ↔ `guestName`, `quote` ↔ `claim`, `episode` ↔ `episodeTitle`, `videoUrl` ↔ `episodeUrl`). Canonical file on this branch uses Content Ops names. `verified: false` is never shown as on-air tape — hidden from the arcade strip and badged **product framing / confirm on-air** if paged to.
+`public/claims.json`:
 
-```json
-{
-  "meta": {
-    "title": "Modern Money District",
-    "sourceNote": "…",
-    "episodeYoutube": "https://www.youtube.com/watch?v=YHFAFX757a0"
-  },
-  "claims": [
-    {
-      "id": "amias-24-7",
-      "storefront": "stablecoin",
-      "guest": "Amias Gerety",
-      "company": "QED Investors",
-      "role": "Partner, Head of U.S.",
-      "quote": "…",
-      "episode": "Stabledash Live Ep 56",
-      "date": "2026-09-03",
-      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
-      "verified": true
-    }
-  ]
-}
-```
+Source of truth: `data/claims.json` → `public/claims.json`.
 
-`storefront` map: `stablecoin` → Stablecoin Shop, `rails` → Rails Station, `policy` → Policy Desk, `arcade` → Agent Pay Arcade. Episode links are YouTube link-outs.
+Storefront keys: `stablecoin` | `rails` | `policy` | `arcade`.
+
+Each claim: id, guest, company, role, quote, episode, date, videoUrl, verified, optional note.
 
 ## Deploy (static)
 
 The site is the `dist/` folder. Relative `base: './'` so it works at a domain root or a subpath.
-
-### Live public URL (Railway)
-
-**https://web-production-6efce.up.railway.app/**
-
-Static `dist/` served from this branch. GitHub Pages could not be flipped on from the agent token (private repo, Pages API 403). The Actions workflow is still in `.github/workflows/pages.yml`.
 
 ### GitHub Pages (Actions)
 
@@ -96,7 +70,7 @@ One-time in the repo:
 
 `https://zdubsventuresllc-ai.github.io/modern-money-district/`
 
-Private repos need Pages enabled for the org/plan. If Pages stays off, use the Railway URL above.
+Private repos need Pages enabled for the org/plan. If Pages stays off, use any static host below.
 
 ### Cloudflare Pages
 

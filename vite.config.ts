@@ -13,6 +13,6 @@ export default defineConfig({
   },
   preview: {
     host: true,
-    port: 8766,
+    port: 4173,
   },
 });

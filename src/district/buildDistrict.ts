@@ -1,12 +1,11 @@
 import * as THREE from "three";
-import { STOREFRONTS, palette } from "../theme";
+import { STOREFRONTS, SPONSORS, palette } from "../theme";
 import type { StorefrontId } from "../types";
 
 export interface Door {
   id: StorefrontId;
   position: THREE.Vector3;
   mesh: THREE.Mesh;
-  hit: THREE.Object3D[];
 }
 
 export interface District {
@@ -40,7 +39,7 @@ function makeCanvasTexture(
 
 function windowFacade(): THREE.CanvasTexture {
   return makeCanvasTexture(512, 512, (ctx, w, h) => {
-    ctx.fillStyle = "#101820";
+    ctx.fillStyle = "#1a1c17";
     ctx.fillRect(0, 0, w, h);
     const cols = 6;
     const rows = 7;
@@ -53,10 +52,10 @@ function windowFacade(): THREE.CanvasTexture {
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const n = (r * 17 + c * 13) % 10;
-        if (n < 3) ctx.fillStyle = "#2a2416";
-        else if (n < 6) ctx.fillStyle = "#c9b48a";
-        else if (n < 8) ctx.fillStyle = "#e8a317";
-        else ctx.fillStyle = "#8a7a55";
+        if (n < 3) ctx.fillStyle = "#151610";
+        else if (n < 6) ctx.fillStyle = "#2a2c27";
+        else if (n < 8) ctx.fillStyle = "rgba(245,245,247,0.16)";
+        else ctx.fillStyle = "#3a3c36";
         const x = padX + c * (cellW + gapX);
         const y = padY + r * (cellH + gapY);
         ctx.fillRect(x, y, cellW, cellH);
@@ -67,33 +66,56 @@ function windowFacade(): THREE.CanvasTexture {
 
 function signTexture(title: string, subtitle: string): THREE.CanvasTexture {
   return makeCanvasTexture(1024, 256, (ctx, w, h) => {
-    ctx.fillStyle = "#0b0b09";
+    ctx.fillStyle = "#11100e";
     ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#e8a317";
+    ctx.strokeStyle = "#d0ea66";
     ctx.lineWidth = 10;
     ctx.strokeRect(18, 18, w - 36, h - 36);
-    ctx.fillStyle = "#e8a317";
-    ctx.font = "600 72px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = "#d0ea66";
+    ctx.font = "400 68px 'Instrument Serif', serif";
     ctx.fillText(title, 48, 118);
-    ctx.fillStyle = "#e8e0d0";
-    ctx.font = "500 34px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = "#f5f5f7";
+    ctx.font = "500 34px 'DM Sans', sans-serif";
     ctx.fillText(subtitle, 48, 186);
   });
 }
 
 function plaqueTexture(): THREE.CanvasTexture {
   return makeCanvasTexture(1024, 256, (ctx, w, h) => {
-    ctx.fillStyle = "#0b0b09";
+    ctx.fillStyle = "#11100e";
     ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#e8a317";
-    ctx.lineWidth = 8;
+    ctx.strokeStyle = "rgba(245,245,247,0.28)";
+    ctx.lineWidth = 4;
     ctx.strokeRect(16, 16, w - 32, h - 32);
-    ctx.fillStyle = "#e8a317";
-    ctx.font = "600 48px 'IBM Plex Mono', monospace";
-    ctx.fillText("MODERN MONEY DISTRICT", 48, 110);
-    ctx.fillStyle = "#e8e0d0";
-    ctx.font = "400 28px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = "#f5f5f7";
+    ctx.font = "400 44px 'Instrument Serif', serif";
+    ctx.fillText("Modern Money District", 48, 110);
+    ctx.fillStyle = "#8b8b9e";
+    ctx.font = "500 26px 'DM Sans', sans-serif";
     ctx.fillText("STABLEDASH STREET  ·  FOUR DOORS", 48, 168);
+  });
+}
+
+/** Charcoal/ivory fallback board when TextureLoader fails (esp. SVG). */
+function sponsorFallbackTexture(name: string): THREE.CanvasTexture {
+  return makeCanvasTexture(1024, 512, (ctx, w, h) => {
+    ctx.fillStyle = "#11100e";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#1a1c17";
+    ctx.fillRect(24, 24, w - 48, h - 48);
+    ctx.strokeStyle = "rgba(245,245,247,0.28)";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(36, 36, w - 72, h - 72);
+    ctx.fillStyle = "#8b8b9e";
+    ctx.font = "500 26px 'DM Sans', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("LIVE SPONSOR", w / 2, 130);
+    ctx.fillStyle = "#f5f5f7";
+    ctx.font = "400 78px 'Instrument Serif', serif";
+    ctx.fillText(name.toUpperCase(), w / 2, 280);
+    ctx.fillStyle = "#8b8b9e";
+    ctx.font = "400 22px 'DM Sans', sans-serif";
+    ctx.fillText("STABLEDASH · MODERN MONEY DISTRICT", w / 2, 380);
   });
 }
 
@@ -114,11 +136,7 @@ function addBox(
   group.add(mesh);
   if (collide) {
     mesh.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(mesh);
-    box.expandByScalar(-0.28);
-    if (box.max.x > box.min.x && box.max.z > box.min.z) {
-      colliders.push(box);
-    }
+    colliders.push(new THREE.Box3().setFromObject(mesh));
   }
   return mesh;
 }
@@ -134,18 +152,205 @@ function lamp(group: THREE.Group, x: number, z: number): void {
   const head = new THREE.Mesh(
     new THREE.BoxGeometry(0.45, 0.12, 0.45),
     new THREE.MeshStandardMaterial({
-      color: palette.amber,
-      emissive: palette.amber,
-      emissiveIntensity: 1.4,
-      roughness: 0.4,
+      color: palette.ivory,
+      emissive: palette.ivory,
+      emissiveIntensity: 0.55,
+      roughness: 0.45,
     }),
   );
   head.position.set(x, 3.62, z);
   group.add(head);
 
-  const light = new THREE.PointLight(palette.amber, 8, 14, 2);
+  const light = new THREE.PointLight(palette.ivory, 4.5, 12, 2);
   light.position.set(x, 3.5, z);
   group.add(light);
+}
+
+function applySponsorMap(
+  mat: THREE.MeshStandardMaterial,
+  tex: THREE.Texture,
+): void {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+  mat.map = tex;
+  mat.emissiveMap = tex;
+  mat.emissive = new THREE.Color(0xffffff);
+  mat.emissiveIntensity = 0.55;
+  mat.needsUpdate = true;
+}
+
+function mountBillboardFace(
+  group: THREE.Group,
+  mat: THREE.MeshStandardMaterial,
+  w: number,
+  h: number,
+  x: number,
+  y: number,
+  z: number,
+  rotY: number,
+): THREE.Mesh {
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(w + 0.12, h + 0.12, 0.1),
+    new THREE.MeshStandardMaterial({
+      color: palette.navy,
+      roughness: 0.55,
+      metalness: 0.15,
+    }),
+  );
+  frame.position.set(x, y, z);
+  frame.rotation.y = rotY;
+  group.add(frame);
+
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  // nudge slightly toward viewer so it sits proud of the frame
+  const nx = Math.sin(rotY);
+  const nz = Math.cos(rotY);
+  face.position.set(x + nx * 0.06, y, z + nz * 0.06);
+  face.rotation.y = rotY;
+  group.add(face);
+  return face;
+}
+
+/**
+ * Times Square-style sponsor strip: street posts opposite storefronts
+ * plus stacked boards on building faces / end walls.
+ */
+function addBillboardStrip(group: THREE.Group, colliders: THREE.Box3[]): void {
+  const loader = new THREE.TextureLoader();
+  loader.setCrossOrigin("anonymous");
+
+  type Slot = {
+    name: string;
+    logoUrl: string;
+    x: number;
+    y: number;
+    z: number;
+    rotY: number;
+    w: number;
+    h: number;
+    post?: boolean;
+  };
+
+  const slots: Slot[] = [];
+
+  // Street posts on sidewalks, facing the street (opposite storefronts)
+  const postPairs: Array<[number, number, number]> = [
+    [-9.2, -3.55, 0], // rotY 0 → faces +Z (south, toward street from north walk)
+    [-3.0, -3.55, 0],
+    [3.0, -3.55, 0],
+    [9.2, -3.55, 0],
+    [-9.2, 3.55, Math.PI],
+    [-3.0, 3.55, Math.PI],
+    [3.0, 3.55, Math.PI],
+    [9.2, 3.55, Math.PI],
+  ];
+
+  SPONSORS.forEach((sp, i) => {
+    if (i < postPairs.length) {
+      const [x, z, rotY] = postPairs[i]!;
+      slots.push({
+        name: sp.name,
+        logoUrl: sp.logoUrl,
+        x,
+        y: 3.35,
+        z,
+        rotY,
+        w: 2.4,
+        h: 1.35,
+        post: true,
+      });
+    }
+  });
+
+  // Extra building-face / end-wall boards for remaining sponsors (and densify)
+  const facadeSlots: Array<[number, number, number, number, number, number]> = [
+    // west end wall facing east into the block
+    [-14.9, 5.4, -4.2, Math.PI / 2, 3.2, 1.8],
+    [-14.9, 5.4, 0, Math.PI / 2, 3.2, 1.8],
+    [-14.9, 5.4, 4.2, Math.PI / 2, 3.2, 1.8],
+    // east end wall facing west
+    [14.9, 5.4, -4.2, -Math.PI / 2, 3.2, 1.8],
+    [14.9, 5.4, 0, -Math.PI / 2, 3.2, 1.8],
+    [14.9, 5.4, 4.2, -Math.PI / 2, 3.2, 1.8],
+    // upper building faces between storefronts (north row, facing street)
+    [-11.2, 6.5, -5.2, 0, 2.6, 1.5],
+    [11.2, 6.5, -5.2, 0, 2.6, 1.5],
+    // south row facing street
+    [-11.2, 6.5, 5.2, Math.PI, 2.6, 1.5],
+    [11.2, 6.5, 5.2, Math.PI, 2.6, 1.5],
+  ];
+
+  // Cycle all sponsors across facade slots so the strip feels dense
+  facadeSlots.forEach((slot, i) => {
+    const sp = SPONSORS[i % SPONSORS.length]!;
+    const [x, y, z, rotY, w, h] = slot;
+    slots.push({ name: sp.name, logoUrl: sp.logoUrl, x, y, z, rotY, w, h });
+  });
+
+  for (const slot of slots) {
+    if (slot.post) {
+      const pole = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.07, 2.7, 8),
+        new THREE.MeshStandardMaterial({ color: 0x2a2a26, roughness: 0.7 }),
+      );
+      pole.position.set(slot.x, 1.35, slot.z);
+      group.add(pole);
+      // thin base pad — no collider so walk stays clear
+      const pad = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.22, 0.26, 0.08, 10),
+        new THREE.MeshStandardMaterial({ color: palette.slate, roughness: 0.85 }),
+      );
+      pad.position.set(slot.x, 0.04, slot.z);
+      group.add(pad);
+    }
+
+    const fallback = sponsorFallbackTexture(slot.name);
+    const mat = new THREE.MeshStandardMaterial({
+      map: fallback,
+      roughness: 0.42,
+      metalness: 0.05,
+      emissive: new THREE.Color(0xffffff),
+      emissiveMap: fallback,
+      emissiveIntensity: 0.45,
+    });
+
+    mountBillboardFace(
+      group,
+      mat,
+      slot.w,
+      slot.h,
+      slot.x,
+      slot.y,
+      slot.z,
+      slot.rotY,
+    );
+
+    // Prefer raster logos; SVG often fails in TextureLoader — keep fallback.
+    const isSvg = /\.svg(\?|$)/i.test(slot.logoUrl);
+    if (!isSvg) {
+      loader.load(
+        slot.logoUrl,
+        (tex) => applySponsorMap(mat, tex),
+        undefined,
+        () => {
+          /* keep canvas fallback */
+        },
+      );
+    } else {
+      // Still try SVG; many hosts serve it as image/* and browsers can decode.
+      loader.load(
+        slot.logoUrl,
+        (tex) => applySponsorMap(mat, tex),
+        undefined,
+        () => {
+          /* canvas fallback already on mat */
+        },
+      );
+    }
+  }
+
+  void colliders;
 }
 
 function buildStorefront(
@@ -157,9 +362,9 @@ function buildStorefront(
 ): void {
   const { x, z, facing, name, subtitle, id } = def;
   const navy = new THREE.MeshStandardMaterial({
-    color: palette.navy,
+    color: palette.charcoal,
     roughness: 0.82,
-    metalness: 0.08,
+    metalness: 0.05,
   });
   const slate = new THREE.MeshStandardMaterial({
     color: palette.slate,
@@ -169,8 +374,8 @@ function buildStorefront(
     map: facade,
     roughness: 0.55,
     metalness: 0.05,
-    emissive: new THREE.Color(0x22180a),
-    emissiveIntensity: 0.35,
+    emissive: new THREE.Color(0xf5f5f7),
+    emissiveIntensity: 0.08,
   });
 
   addBox(
@@ -210,10 +415,10 @@ function buildStorefront(
   const door = new THREE.Mesh(
     new THREE.BoxGeometry(doorW, doorH, 0.12),
     new THREE.MeshStandardMaterial({
-      color: 0x0a0a08,
-      emissive: palette.amber,
-      emissiveIntensity: 0.18,
-      roughness: 0.4,
+      color: 0x11100e,
+      emissive: palette.ivory,
+      emissiveIntensity: 0.04,
+      roughness: 0.45,
     }),
   );
   door.position.set(x, doorH / 2, doorZ);
@@ -223,9 +428,10 @@ function buildStorefront(
   const frame = new THREE.Mesh(
     new THREE.BoxGeometry(doorW + 0.16, doorH + 0.16, 0.06),
     new THREE.MeshStandardMaterial({
-      color: palette.amber,
-      emissive: palette.amber,
-      emissiveIntensity: 0.6,
+      color: palette.secondary,
+      emissive: palette.secondary,
+      emissiveIntensity: 0.05,
+      roughness: 0.55,
     }),
   );
   frame.position.set(x, doorH / 2, doorZ - facing * 0.05);
@@ -236,13 +442,12 @@ function buildStorefront(
     new THREE.MeshStandardMaterial({
       map: signTexture(name, subtitle),
       roughness: 0.45,
-      emissive: palette.amber,
-      emissiveIntensity: 0.22,
+      emissive: palette.lime,
+      emissiveIntensity: 0.18,
     }),
   );
   sign.position.set(x, 5.35, faceZ + facing * 0.02);
   sign.rotation.y = facing > 0 ? 0 : Math.PI;
-  sign.userData.storefrontId = id;
   group.add(sign);
 
   const awning = new THREE.Mesh(
@@ -254,9 +459,8 @@ function buildStorefront(
 
   doors.push({
     id,
-    position: new THREE.Vector3(x, 1.65, doorZ + facing * 1.7),
+    position: new THREE.Vector3(x, 1.2, doorZ + facing * 0.9),
     mesh: door,
-    hit: [door, sign, frame],
   });
 }
 
@@ -278,7 +482,7 @@ export function buildDistrict(): District {
   group.add(asphalt);
 
   const sidewalkMat = new THREE.MeshStandardMaterial({
-    color: palette.sidewalk,
+    color: 0x2a2c27,
     roughness: 0.9,
   });
   const northWalk = new THREE.Mesh(
@@ -292,9 +496,9 @@ export function buildDistrict(): District {
   group.add(southWalk);
 
   const lineMat = new THREE.MeshStandardMaterial({
-    color: palette.amber,
-    emissive: palette.amber,
-    emissiveIntensity: 0.35,
+    color: palette.ivory,
+    emissive: palette.ivory,
+    emissiveIntensity: 0.12,
   });
   for (let i = -6; i <= 6; i++) {
     if (i === 0) continue;
@@ -348,7 +552,7 @@ export function buildDistrict(): District {
   lamp(group, 10.5, 3.6);
 
   const planterMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2418,
+    color: 0x22241f,
     roughness: 0.8,
   });
   const hedgeMat = new THREE.MeshStandardMaterial({
@@ -367,9 +571,13 @@ export function buildDistrict(): District {
     group.add(hedge);
   }
 
-  const hemi = new THREE.HemisphereLight(0x3a3224, 0x080806, 0.7);
+  // Times Square sponsor strip — midnight/charcoal boards, no purple fog
+  addBillboardStrip(group, colliders);
+
+  // Soft warm ambient only — brand terminal midnight/charcoal (no purple fog)
+  const hemi = new THREE.HemisphereLight(0x2a2c27, 0x11100e, 0.22);
   group.add(hemi);
-  const key = new THREE.DirectionalLight(0xffe2a8, 1.05);
+  const key = new THREE.DirectionalLight(0xf5f5f7, 0.95);
   key.position.set(8, 16, 6);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
@@ -378,6 +586,11 @@ export function buildDistrict(): District {
   key.shadow.camera.top = 16;
   key.shadow.camera.bottom = -16;
   group.add(key);
+
+  // Fill to keep billboards readable without purple wash
+  const fill = new THREE.DirectionalLight(0xa7a5a0, 0.22);
+  fill.position.set(-6, 10, -4);
+  group.add(fill);
 
   return {
     group,
@@ -391,14 +604,12 @@ export function buildDistrict(): District {
 export function nearestDoor(
   doors: Door[],
   pos: THREE.Vector3,
-  radius = 4.6,
+  radius = 2.4,
 ): Door | null {
   let best: Door | null = null;
   let bestD = radius;
   for (const door of doors) {
-    const dx = door.position.x - pos.x;
-    const dz = door.position.z - pos.z;
-    const d = Math.hypot(dx, dz);
+    const d = door.position.distanceTo(pos);
     if (d < bestD) {
       best = door;
       bestD = d;

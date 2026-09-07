@@ -45,13 +45,13 @@ function labelTexture(text: string, danger: boolean): THREE.CanvasTexture {
   canvas.height = 128;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("2d context unavailable");
-  ctx.fillStyle = "#0b0b09";
+  ctx.fillStyle = "#11100e";
   ctx.fillRect(0, 0, 512, 128);
-  ctx.strokeStyle = danger ? "#c44b2b" : "#e8a317";
+  ctx.strokeStyle = danger ? "#c44b2b" : "#d0ea66";
   ctx.lineWidth = 8;
   ctx.strokeRect(10, 10, 492, 108);
-  ctx.fillStyle = danger ? "#c44b2b" : "#e8a317";
-  ctx.font = "600 42px 'IBM Plex Mono', monospace";
+  ctx.fillStyle = danger ? "#c44b2b" : "#d0ea66";
+  ctx.font = "600 42px 'DM Sans', sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(text, 256, 80);
   const tex = new THREE.CanvasTexture(canvas);
@@ -102,22 +102,22 @@ export class SettlementRun {
     this.scene.background = new THREE.Color(palette.ink);
     this.scene.fog = new THREE.Fog(palette.ink, 18, 70);
 
-    const hemi = new THREE.HemisphereLight(0x3a3224, 0x080806, 0.8);
+    const hemi = new THREE.HemisphereLight(0x2a2c27, 0x11100e, 0.25);
     this.scene.add(hemi);
-    const key = new THREE.DirectionalLight(0xffe2a8, 1.1);
+    const key = new THREE.DirectionalLight(0xf5f5f7, 0.9);
     key.position.set(6, 14, 8);
     this.scene.add(key);
 
     const trough = new THREE.Mesh(
       new THREE.BoxGeometry(9.2, 0.2, TRACK_LEN + 20),
-      new THREE.MeshStandardMaterial({ color: 0x121820, roughness: 0.9 }),
+      new THREE.MeshStandardMaterial({ color: 0x1a1c17, roughness: 0.9 }),
     );
     trough.position.set(0, -0.2, TRACK_LEN / 2);
     this.scene.add(trough);
 
     const railMat = new THREE.MeshStandardMaterial({
-      color: palette.amber,
-      emissive: palette.amber,
+      color: palette.lime,
+      emissive: palette.lime,
       emissiveIntensity: 0.45,
     });
     for (const x of [-3.3, 3.3]) {
@@ -129,8 +129,8 @@ export class SettlementRun {
       const lane = new THREE.Mesh(
         new THREE.BoxGeometry(0.06, 0.02, TRACK_LEN),
         new THREE.MeshStandardMaterial({
-          color: 0x8a8274,
-          emissive: 0x3a3224,
+          color: 0xa7a5a0,
+          emissive: 0x2a2c27,
           emissiveIntensity: 0.2,
         }),
       );
@@ -139,7 +139,7 @@ export class SettlementRun {
     }
 
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x0e141c,
+      color: 0x151610,
       roughness: 0.85,
     });
     for (const x of [-4.8, 4.8]) {
@@ -152,7 +152,7 @@ export class SettlementRun {
       const tag = new THREE.Mesh(
         new THREE.PlaneGeometry(2.2, 0.45),
         new THREE.MeshBasicMaterial({
-          color: palette.amber,
+          color: palette.lime,
           transparent: true,
           opacity: 0.35,
         }),
@@ -167,8 +167,8 @@ export class SettlementRun {
     const finish = new THREE.Mesh(
       new THREE.BoxGeometry(9, 3.2, 0.3),
       new THREE.MeshStandardMaterial({
-        color: palette.amber,
-        emissive: palette.amber,
+        color: palette.lime,
+        emissive: palette.lime,
         emissiveIntensity: 0.7,
       }),
     );
@@ -187,8 +187,8 @@ export class SettlementRun {
     this.packet = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.7, 1.1),
       new THREE.MeshStandardMaterial({
-        color: palette.amber,
-        emissive: palette.amber,
+        color: palette.lime,
+        emissive: palette.lime,
         emissiveIntensity: 1.1,
         roughness: 0.3,
       }),
@@ -198,8 +198,8 @@ export class SettlementRun {
     this.ghost = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.7, 1.1),
       new THREE.MeshStandardMaterial({
-        color: palette.cream,
-        emissive: palette.cream,
+        color: palette.ivory,
+        emissive: palette.ivory,
         emissiveIntensity: 0.35,
         transparent: true,
         opacity: 0.35,
@@ -230,7 +230,7 @@ export class SettlementRun {
           new THREE.BoxGeometry(1.7, 1.05, 0.55),
           new THREE.MeshStandardMaterial({
             color: danger ? palette.danger : palette.ok,
-            emissive: danger ? palette.danger : palette.amber,
+            emissive: danger ? palette.danger : palette.lime,
             emissiveIntensity: 0.45,
           }),
         );

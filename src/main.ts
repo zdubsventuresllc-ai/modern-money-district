@@ -1,13 +1,11 @@
 import * as THREE from "three";
-import { claimsFor, loadClaims, primaryClaim } from "./claims";
+import { beatChrome, mountBeat, pickClaim, rewardHtml } from "./beats";
+import { loadClaims } from "./claims";
 import { buildDistrict, nearestDoor, type Door } from "./district/buildDistrict";
 import { Walker } from "./player/walker";
-import {
-  SettlementRun,
-  bestGhostTime,
-} from "./arcade/settlementRun";
+import { SettlementRun, bestGhostTime } from "./arcade/settlementRun";
 import { STOREFRONTS, palette } from "./theme";
-import type { Claim, ClaimsFile, GameMode, StorefrontId } from "./types";
+import type { ClaimsFile, GameMode, StorefrontId } from "./types";
 
 const $ = <T extends HTMLElement>(id: string) => {
   const el = document.getElementById(id);
@@ -22,20 +20,12 @@ const prompt = $("prompt");
 const promptLabel = $("prompt-label");
 const nearestEl = $("nearest");
 const lookHint = $("look-hint");
-const claimPanel = $("claim");
-const claimKicker = $("claim-kicker");
-const claimName = $("claim-name");
-const claimText = $("claim-text");
-const claimGuest = $("claim-guest");
-const claimEpisode = $("claim-episode");
-const claimEpisodeLink = $<HTMLAnchorElement>("claim-episode-link");
-const claimVerify = $("claim-verify");
-const claimNote = $("claim-note");
-const claimNotice = $("claim-notice");
-const claimBack = $<HTMLButtonElement>("claim-back");
-const claimPlay = $<HTMLButtonElement>("claim-play");
-const claimPrev = $<HTMLButtonElement>("claim-prev");
-const claimNext = $<HTMLButtonElement>("claim-next");
+const beatPanel = $("beat");
+const beatKicker = $("beat-kicker");
+const beatName = $("beat-name");
+const beatBody = $("beat-body");
+const beatBack = $<HTMLButtonElement>("beat-back");
+const beatPlay = $<HTMLButtonElement>("beat-play");
 const arcadeHud = $("arcade-hud");
 const arcadeClock = $("arcade-clock");
 const arcadeGhost = $("arcade-ghost");
@@ -46,6 +36,7 @@ const resultPanel = $("arcade-result");
 const resultTitle = $("result-title");
 const resultTime = $("result-time");
 const resultGhost = $("result-ghost");
+const resultReward = $("result-reward");
 const resultAgain = $<HTMLButtonElement>("result-again");
 const resultStreet = $<HTMLButtonElement>("result-street");
 const enterBtn = $<HTMLButtonElement>("enter-btn");
@@ -63,10 +54,11 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.0;
 
 const streetScene = new THREE.Scene();
 streetScene.background = new THREE.Color(palette.ink);
+streetScene.fog = new THREE.FogExp2(palette.ink, 0.018);
 
 const camera = new THREE.PerspectiveCamera(
   68,
@@ -88,21 +80,10 @@ const ndc = new THREE.Vector2();
 let mode: GameMode = "splash";
 let claims: ClaimsFile | null = null;
 let activeDoor: Door | null = null;
-let activeStorefront: StorefrontId | null = null;
-let claimIndex = 0;
 let arcade: SettlementRun | null = null;
 let last = performance.now();
-
-function isCoarse(): boolean {
-  return matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
-}
-
-function isUi(event: Event): boolean {
-  const target = event.target;
-  return target instanceof Element && Boolean(
-    target.closest("button, a, .prompt, .sheet, input"),
-  );
-}
+let unmountBeat: (() => void) | null = null;
+const coarse = matchMedia("(pointer: coarse)").matches;
 
 loadClaims()
   .then((file) => {
@@ -120,64 +101,33 @@ function setMode(next: GameMode): void {
   mode = next;
   splash.classList.toggle("hidden", next !== "splash");
   hud.classList.toggle("hidden", next !== "street");
-  claimPanel.classList.toggle("hidden", next !== "claim");
+  beatPanel.classList.toggle("hidden", next !== "claim");
   arcadeHud.classList.toggle("hidden", next !== "arcade");
   resultPanel.classList.toggle("hidden", next !== "arcade-result");
-  touch.classList.toggle("hidden", !(isCoarse() && next === "street"));
+  touch.classList.toggle("hidden", !(coarse && next === "street"));
   if (next !== "street") walker.exitLock();
+  if (next !== "claim") {
+    unmountBeat?.();
+    unmountBeat = null;
+    beatPlay.classList.add("hidden");
+  }
 }
 
-function renderClaim(id: StorefrontId, index: number): void {
-  const def = STOREFRONTS.find((s) => s.id === id);
-  const list = claims ? claimsFor(claims, id) : [];
-  const safeIndex = list.length
-    ? ((index % list.length) + list.length) % list.length
-    : 0;
-  claimIndex = safeIndex;
-  const claim: Claim | undefined = list[safeIndex];
-  claimKicker.textContent = def?.subtitle ?? "STOREFRONT";
-  claimName.textContent = def?.name ?? id;
-  claimText.textContent = claim?.quote ?? "No claim mapped for this door.";
-  const who = [claim?.guest, claim?.company, claim?.role]
-    .filter((part) => part && part.length)
-    .join(" · ");
-  claimGuest.textContent = who || "Guest";
-  claimEpisode.textContent = claim
-    ? `${claim.episode}${claim.date ? ` · ${claim.date}` : ""}`
-    : "";
-  const video = claim?.videoUrl ?? claims?.meta.episodeYoutube ?? "";
-  if (video) {
-    claimEpisodeLink.href = video;
-    claimEpisodeLink.classList.remove("hidden");
-  } else {
-    claimEpisodeLink.classList.add("hidden");
+function openBeat(id: StorefrontId): void {
+  const chrome = beatChrome(id);
+  beatKicker.textContent = chrome.kicker;
+  beatName.textContent = chrome.name;
+  beatPlay.classList.add("hidden");
+  unmountBeat?.();
+  unmountBeat = mountBeat(id, beatBody, claims, {
+    onComplete: () => {
+      /* punchline already in panel */
+    },
+    onPlayArcade: () => startArcade(),
+  });
+  if (id === "arcade") {
+    /* arcade intro has its own CTA */
   }
-  if (claim && !claim.verified) {
-    claimVerify.textContent = "product framing / confirm on-air";
-    claimVerify.classList.add("is-framing");
-  } else {
-    claimVerify.textContent = claim ? "VERIFIED · EPISODE CITE" : "";
-    claimVerify.classList.remove("is-framing");
-  }
-  const extra = [claim?.note, claim?.clipNote].filter(Boolean).join(" · ");
-  if (extra) {
-    claimNote.textContent = extra;
-    claimNote.classList.remove("hidden");
-  } else {
-    claimNote.classList.add("hidden");
-  }
-  claimNotice.textContent = claims?.meta.sourceNote ?? "";
-  claimPrev.classList.toggle("hidden", list.length < 2);
-  claimNext.classList.toggle("hidden", list.length < 2);
-  claimPlay.classList.toggle("hidden", id !== "agent-pay-arcade");
-}
-
-function openClaim(id: StorefrontId): void {
-  activeStorefront = id;
-  const list = claims ? claimsFor(claims, id) : [];
-  const firstTape = list.findIndex((c) => c.verified);
-  claimIndex = firstTape >= 0 ? firstTape : 0;
-  renderClaim(id, claimIndex);
   setMode("claim");
 }
 
@@ -192,14 +142,10 @@ function startArcade(): void {
   arcade = new SettlementRun();
   arcade.camera.aspect = window.innerWidth / window.innerHeight;
   arcade.camera.updateProjectionMatrix();
-  const claim = claims ? primaryClaim(claims, "agent-pay-arcade") : undefined;
-  arcadeClaim.textContent = claim
-    ? `GUEST SAID… ${claim.quote} — ${claim.guest} · ${claim.episode}`
-    : "";
+  // No claim spoil mid-run — punchline lands on arcade-result.
+  arcadeClaim.textContent = "Clear the corridor. Guest line drops after you settle.";
   const best = bestGhostTime();
-  arcadeGhost.textContent = best
-    ? `GHOST ${formatClock(best)}`
-    : "GHOST —";
+  arcadeGhost.textContent = best ? `Ghost ${formatClock(best)}` : "Ghost —";
   setMode("arcade");
 }
 
@@ -208,12 +154,20 @@ function showArcadeResult(title: string, time: number | null): void {
   resultTime.textContent = time == null ? "DNF" : formatClock(time);
   const best = bestGhostTime();
   if (time != null && best != null && time <= best + 0.0001) {
-    resultGhost.textContent = "New ghost written to localStorage.";
+    resultGhost.textContent = "New ghost — shareable Settlement Run time.";
   } else if (best != null) {
     resultGhost.textContent = `Best ghost ${formatClock(best)}`;
   } else {
     resultGhost.textContent = "No prior ghost.";
   }
+  // Teach-then-reward: punchline after Settlement Run (prefer blake-aave / kevin-align).
+  const claim = pickClaim(claims, "arcade", ["blake-aave", "kevin-align"]);
+  resultReward.innerHTML = rewardHtml(
+    claim,
+    time == null
+      ? "Corridor closed — still earn the line. Ghost waits for a clear run."
+      : "You settled. Share the ghost time — that’s the X unit.",
+  );
   setMode("arcade-result");
 }
 
@@ -222,84 +176,40 @@ function returnToStreet(): void {
   arcade = null;
   walker.reset(new THREE.Vector3(6.2, 1.65, 5.2), 0);
   setMode("street");
-  if (!isCoarse()) walker.requestLock(canvas);
+  if (!coarse) walker.requestLock(canvas);
 }
 
 enterBtn.addEventListener("click", () => {
   setMode("street");
-  if (!isCoarse()) walker.requestLock(canvas);
+  if (!coarse) walker.requestLock(canvas);
 });
 
-let dragLook = false;
-let dragX = 0;
-let dragY = 0;
-let dragMoved = false;
-
-canvas.addEventListener("pointerdown", (e) => {
+canvas.addEventListener("click", (e) => {
   if (mode !== "street") return;
-  if (e.button !== 0) return;
-  dragLook = true;
-  dragMoved = false;
-  dragX = e.clientX;
-  dragY = e.clientY;
-  canvas.setPointerCapture(e.pointerId);
-});
-
-canvas.addEventListener("pointermove", (e) => {
-  if (!dragLook || walker.locked) return;
-  const dx = e.clientX - dragX;
-  const dy = e.clientY - dragY;
-  if (Math.hypot(dx, dy) > 3) dragMoved = true;
-  walker.lookDelta(dx, dy);
-  dragX = e.clientX;
-  dragY = e.clientY;
-});
-
-canvas.addEventListener("pointerup", (e) => {
-  if (mode !== "street") {
-    dragLook = false;
-    return;
-  }
-  const wasDrag = dragLook && dragMoved;
-  dragLook = false;
-
+  if (!coarse) walker.requestLock(canvas);
   const rect = canvas.getBoundingClientRect();
   ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(ndc, camera);
   const hits = raycaster.intersectObjects(
-    district.doors.flatMap((d) => d.hit),
+    district.doors.map((d) => d.mesh),
     false,
   );
   const id = hits[0]?.object.userData.storefrontId as StorefrontId | undefined;
-  if (id) {
-    openClaim(id);
-    return;
-  }
-  if (!wasDrag && !isCoarse()) walker.requestLock(canvas);
+  if (id) openBeat(id);
 });
 
 prompt.addEventListener("click", () => {
-  if (activeDoor) openClaim(activeDoor.id);
+  if (activeDoor) openBeat(activeDoor.id);
 });
 
-claimBack.addEventListener("click", () => {
+beatBack.addEventListener("click", () => {
   setMode("street");
-  if (!isCoarse()) walker.requestLock(canvas);
+  if (!coarse) walker.requestLock(canvas);
 });
 
-claimPlay.addEventListener("click", () => {
+beatPlay.addEventListener("click", () => {
   startArcade();
-});
-
-claimPrev.addEventListener("click", () => {
-  if (!activeStorefront) return;
-  renderClaim(activeStorefront, claimIndex - 1);
-});
-
-claimNext.addEventListener("click", () => {
-  if (!activeStorefront) return;
-  renderClaim(activeStorefront, claimIndex + 1);
 });
 
 arcadeExit.addEventListener("click", () => {
@@ -318,7 +228,7 @@ resultStreet.addEventListener("click", () => {
 window.addEventListener("keydown", (e) => {
   if (e.code === "KeyE" && mode === "street" && activeDoor) {
     e.preventDefault();
-    openClaim(activeDoor.id);
+    openBeat(activeDoor.id);
   }
   if (e.code === "Escape") {
     if (mode === "claim") {
@@ -336,6 +246,9 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+let lookTouch: number | null = null;
+let lookX = 0;
+let lookY = 0;
 let stickTouch: number | null = null;
 
 function stickFromEvent(e: PointerEvent): void {
@@ -355,23 +268,36 @@ function stickFromEvent(e: PointerEvent): void {
 }
 
 window.addEventListener("pointerdown", (e) => {
-  if (isUi(e)) return;
   if (mode === "arcade") {
     const mid = window.innerWidth / 2;
     arcade?.shift(e.clientX < mid ? -1 : 1);
     return;
   }
   if (mode !== "street") return;
-  if (isCoarse() && e.target instanceof Node && stick.contains(e.target)) {
+  if (coarse && e.target instanceof Node && stick.contains(e.target)) {
     stickTouch = e.pointerId;
     stick.setPointerCapture(e.pointerId);
     stickFromEvent(e);
+    return;
+  }
+  if (coarse) {
+    lookTouch = e.pointerId;
+    lookX = e.clientX;
+    lookY = e.clientY;
   }
 });
 
 window.addEventListener("pointermove", (e) => {
   if (mode !== "street") return;
-  if (e.pointerId === stickTouch) stickFromEvent(e);
+  if (e.pointerId === stickTouch) {
+    stickFromEvent(e);
+    return;
+  }
+  if (e.pointerId === lookTouch) {
+    walker.lookDelta(e.clientX - lookX, e.clientY - lookY);
+    lookX = e.clientX;
+    lookY = e.clientY;
+  }
 });
 
 function endPointer(e: PointerEvent): void {
@@ -381,6 +307,7 @@ function endPointer(e: PointerEvent): void {
     walker.stick.z = 0;
     stickKnob.style.transform = "";
   }
+  if (e.pointerId === lookTouch) lookTouch = null;
 }
 
 window.addEventListener("pointerup", endPointer);
@@ -407,17 +334,17 @@ function tick(now: number): void {
     activeDoor = nearestDoor(district.doors, walker.position);
     if (activeDoor) {
       prompt.classList.remove("hidden");
-      promptLabel.textContent = `ENTER ${storefrontName(activeDoor.id)}`;
+      promptLabel.textContent = `Enter ${storefrontName(activeDoor.id)}`;
       nearestEl.textContent = storefrontName(activeDoor.id);
       activeDoor.mesh.material = pulseDoor(now, true);
     } else {
       prompt.classList.add("hidden");
-      nearestEl.textContent = "STREET";
+      nearestEl.textContent = "Street";
     }
     for (const door of district.doors) {
       if (door !== activeDoor) door.mesh.material = pulseDoor(now, false);
     }
-    lookHint.classList.toggle("hidden", isCoarse() || walker.locked);
+    lookHint.classList.toggle("hidden", coarse || walker.locked);
     renderer.render(streetScene, camera);
   } else if (mode === "claim" || mode === "splash") {
     renderer.render(streetScene, camera);
@@ -432,9 +359,9 @@ function tick(now: number): void {
     }
     renderer.render(arcade.scene, arcade.camera);
     if (phase === "won") {
-      showArcadeResult("SETTLED T+0", arcade.resultTime());
+      showArcadeResult("Settled T+0", arcade.resultTime());
     } else if (phase === "dnf") {
-      showArcadeResult("WINDOW CLOSED", null);
+      showArcadeResult("Window closed", null);
     }
   } else if (mode === "arcade-result" && arcade) {
     renderer.render(arcade.scene, arcade.camera);
@@ -444,16 +371,16 @@ function tick(now: number): void {
 }
 
 const doorIdle = new THREE.MeshStandardMaterial({
-  color: 0x0a0a08,
-  emissive: palette.amber,
-  emissiveIntensity: 0.18,
-  roughness: 0.4,
+  color: 0x11100e,
+  emissive: palette.ivory,
+  emissiveIntensity: 0.05,
+  roughness: 0.45,
 });
 const doorHot = new THREE.MeshStandardMaterial({
-  color: 0x0a0a08,
-  emissive: palette.amber,
-  emissiveIntensity: 0.85,
-  roughness: 0.35,
+  color: 0x11100e,
+  emissive: palette.lime,
+  emissiveIntensity: 0.4,
+  roughness: 0.4,
 });
 
 function pulseDoor(_now: number, hot: boolean): THREE.Material {
@@ -463,6 +390,7 @@ function pulseDoor(_now: number, hot: boolean): THREE.Material {
 window.addEventListener("beforeunload", () => {
   unbindWalker();
   arcade?.dispose();
+  unmountBeat?.();
 });
 
 setMode("splash");
