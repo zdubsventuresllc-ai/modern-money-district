@@ -1,5 +1,15 @@
 import type { Claim, ClaimsFile, StorefrontId } from "./types";
 
+export const STOREFRONT_KEYS: Record<
+  StorefrontId,
+  Claim["storefront"]
+> = {
+  "stablecoin-shop": "stablecoin",
+  "rails-station": "rails",
+  "policy-desk": "policy",
+  "agent-pay-arcade": "arcade",
+};
+
 export async function loadClaims(): Promise<ClaimsFile> {
   const url = `${import.meta.env.BASE_URL}claims.json`;
   const res = await fetch(url);
@@ -13,9 +23,20 @@ export async function loadClaims(): Promise<ClaimsFile> {
   return data;
 }
 
-export function claimFor(
+export function claimsFor(
+  file: ClaimsFile,
+  id: StorefrontId,
+): Claim[] {
+  const key = STOREFRONT_KEYS[id];
+  return file.claims
+    .filter((c) => c.storefront === key)
+    .sort((a, b) => Number(b.verified) - Number(a.verified));
+}
+
+export function primaryClaim(
   file: ClaimsFile,
   id: StorefrontId,
 ): Claim | undefined {
-  return file.claims.find((c) => c.storefrontId === id);
+  const list = claimsFor(file, id);
+  return list.find((c) => c.verified) ?? list[0];
 }

@@ -2,7 +2,7 @@
 
 Stabledash lab spike: a **small walkable Three.js city block** (not an open world) and an **Agent Pay Arcade** settlement-run. Overnight playable prototype. Terminal / data-brutalism. Amber on black.
 
-Claims in `public/claims.json` are **PLACEHOLDER — replace with Content Ops claims**. They use obviously-fake demo strings only. Do not treat them as market facts.
+Claims in `public/claims.json` are grounded in **Stabledash Live Ep 56** (2026-09-03) plus the 8/20 Tenderly extract. Quotes are not rewritten. Prefer `verified: true` in the UI; `verified: false` is labeled **product framing / confirm on-air**.
 
 ## What shipped
 
@@ -46,25 +46,33 @@ npm run preview
 
 ## Claims schema
 
-`public/claims.json`:
+`public/claims.json` uses Content Ops fields (`storefront`, not `storefrontId`):
 
 ```json
 {
-  "notice": "PLACEHOLDER — replace with Content Ops claims",
+  "meta": {
+    "title": "Modern Money District",
+    "sourceNote": "…",
+    "episodeYoutube": "https://www.youtube.com/watch?v=YHFAFX757a0"
+  },
   "claims": [
     {
-      "storefrontId": "stablecoin-shop",
-      "guestName": "…",
-      "claim": "Guest said…",
-      "episodeTitle": "…",
-      "episodeUrl": "https://…",
-      "clipUrl": "https://…"
+      "id": "amias-24-7",
+      "storefront": "stablecoin",
+      "guest": "Amias Gerety",
+      "company": "QED Investors",
+      "role": "Partner, Head of U.S.",
+      "quote": "…",
+      "episode": "Stabledash Live Ep 56",
+      "date": "2026-09-03",
+      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
+      "verified": true
     }
   ]
 }
 ```
 
-`storefrontId` must be one of: `stablecoin-shop`, `rails-station`, `policy-desk`, `agent-pay-arcade`. `clipUrl` is optional. Episode and clip are link-outs.
+`storefront` map: `stablecoin` → Stablecoin Shop, `rails` → Rails Station, `policy` → Policy Desk, `arcade` → Agent Pay Arcade. Episode links are YouTube link-outs.
 
 ## Deploy (static)
 

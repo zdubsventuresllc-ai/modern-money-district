@@ -2,7 +2,7 @@ name: Deploy static site
 
 on:
   push:
-    branches: [main]
+    branches: [main, cursor/modern-money-district-1ce5]
   workflow_dispatch:
 
 permissions:

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { claimFor, loadClaims } from "./claims";
+import { claimsFor, loadClaims, primaryClaim } from "./claims";
 import { buildDistrict, nearestDoor, type Door } from "./district/buildDistrict";
 import { Walker } from "./player/walker";
 import {
@@ -29,10 +29,13 @@ const claimText = $("claim-text");
 const claimGuest = $("claim-guest");
 const claimEpisode = $("claim-episode");
 const claimEpisodeLink = $<HTMLAnchorElement>("claim-episode-link");
-const claimClipLink = $<HTMLAnchorElement>("claim-clip-link");
+const claimVerify = $("claim-verify");
+const claimNote = $("claim-note");
 const claimNotice = $("claim-notice");
 const claimBack = $<HTMLButtonElement>("claim-back");
 const claimPlay = $<HTMLButtonElement>("claim-play");
+const claimPrev = $<HTMLButtonElement>("claim-prev");
+const claimNext = $<HTMLButtonElement>("claim-next");
 const arcadeHud = $("arcade-hud");
 const arcadeClock = $("arcade-clock");
 const arcadeGhost = $("arcade-ghost");
@@ -85,6 +88,8 @@ const ndc = new THREE.Vector2();
 let mode: GameMode = "splash";
 let claims: ClaimsFile | null = null;
 let activeDoor: Door | null = null;
+let activeStorefront: StorefrontId | null = null;
+let claimIndex = 0;
 let arcade: SettlementRun | null = null;
 let last = performance.now();
 const coarse = matchMedia("(pointer: coarse)").matches;
@@ -112,30 +117,53 @@ function setMode(next: GameMode): void {
   if (next !== "street") walker.exitLock();
 }
 
-function openClaim(id: StorefrontId): void {
+function renderClaim(id: StorefrontId, index: number): void {
   const def = STOREFRONTS.find((s) => s.id === id);
-  const claim: Claim | undefined = claims
-    ? claimFor(claims, id)
-    : undefined;
+  const list = claims ? claimsFor(claims, id) : [];
+  const safeIndex = list.length ? ((index % list.length) + list.length) % list.length : 0;
+  claimIndex = safeIndex;
+  const claim: Claim | undefined = list[safeIndex];
   claimKicker.textContent = def?.subtitle ?? "STOREFRONT";
   claimName.textContent = def?.name ?? id;
-  claimText.textContent =
-    claim?.claim ??
-    "PLACEHOLDER — Guest said… claim missing from claims.json.";
-  claimGuest.textContent = claim?.guestName ?? "DEMO GUEST (PLACEHOLDER)";
-  claimEpisode.textContent =
-    claim?.episodeTitle ?? "[DEMO] Episode missing";
-  claimEpisodeLink.href = claim?.episodeUrl ?? "https://example.invalid";
-  if (claim?.clipUrl) {
-    claimClipLink.href = claim.clipUrl;
-    claimClipLink.classList.remove("hidden");
+  claimText.textContent = claim?.quote ?? "No claim mapped for this door.";
+  const who = [claim?.guest, claim?.company, claim?.role]
+    .filter((part) => part && part.length)
+    .join(" · ");
+  claimGuest.textContent = who || "Guest";
+  claimEpisode.textContent = claim
+    ? `${claim.episode}${claim.date ? ` · ${claim.date}` : ""}`
+    : "";
+  const video = claim?.videoUrl ?? claims?.meta.episodeYoutube ?? "";
+  if (video) {
+    claimEpisodeLink.href = video;
+    claimEpisodeLink.classList.remove("hidden");
   } else {
-    claimClipLink.classList.add("hidden");
+    claimEpisodeLink.classList.add("hidden");
   }
-  claimNotice.textContent =
-    claims?.notice ??
-    "PLACEHOLDER — replace with Content Ops claims";
+  if (claim && !claim.verified) {
+    claimVerify.textContent = "product framing / confirm on-air";
+    claimVerify.classList.add("is-framing");
+  } else {
+    claimVerify.textContent = claim ? "VERIFIED · EPISODE CITE" : "";
+    claimVerify.classList.remove("is-framing");
+  }
+  const extra = [claim?.note, claim?.clipNote].filter(Boolean).join(" · ");
+  if (extra) {
+    claimNote.textContent = extra;
+    claimNote.classList.remove("hidden");
+  } else {
+    claimNote.classList.add("hidden");
+  }
+  claimNotice.textContent = claims?.meta.sourceNote ?? "";
+  claimPrev.classList.toggle("hidden", list.length < 2);
+  claimNext.classList.toggle("hidden", list.length < 2);
   claimPlay.classList.toggle("hidden", id !== "agent-pay-arcade");
+}
+
+function openClaim(id: StorefrontId): void {
+  activeStorefront = id;
+  claimIndex = 0;
+  renderClaim(id, 0);
   setMode("claim");
 }
 
@@ -150,9 +178,9 @@ function startArcade(): void {
   arcade = new SettlementRun();
   arcade.camera.aspect = window.innerWidth / window.innerHeight;
   arcade.camera.updateProjectionMatrix();
-  const claim = claims ? claimFor(claims, "agent-pay-arcade") : undefined;
+  const claim = claims ? primaryClaim(claims, "agent-pay-arcade") : undefined;
   arcadeClaim.textContent = claim
-    ? `GUEST SAID… ${claim.claim} — ${claim.guestName} · ${claim.episodeTitle}`
+    ? `GUEST SAID… ${claim.quote} — ${claim.guest} · ${claim.episode}`
     : "";
   const best = bestGhostTime();
   arcadeGhost.textContent = best
@@ -188,9 +216,41 @@ enterBtn.addEventListener("click", () => {
   if (!coarse) walker.requestLock(canvas);
 });
 
-canvas.addEventListener("click", (e) => {
+let dragLook = false;
+let dragX = 0;
+let dragY = 0;
+let dragMoved = false;
+
+canvas.addEventListener("pointerdown", (e) => {
   if (mode !== "street") return;
-  if (!coarse) walker.requestLock(canvas);
+  if (coarse) return;
+  if (e.button !== 0) return;
+  dragLook = true;
+  dragMoved = false;
+  dragX = e.clientX;
+  dragY = e.clientY;
+  canvas.setPointerCapture(e.pointerId);
+});
+
+canvas.addEventListener("pointermove", (e) => {
+  if (!dragLook || walker.locked) return;
+  const dx = e.clientX - dragX;
+  const dy = e.clientY - dragY;
+  if (Math.hypot(dx, dy) > 3) dragMoved = true;
+  walker.lookDelta(dx, dy);
+  dragX = e.clientX;
+  dragY = e.clientY;
+});
+
+canvas.addEventListener("pointerup", (e) => {
+  if (mode !== "street") {
+    dragLook = false;
+    return;
+  }
+  const wasDrag = dragLook && dragMoved;
+  dragLook = false;
+  if (coarse) return;
+
   const rect = canvas.getBoundingClientRect();
   ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -200,7 +260,11 @@ canvas.addEventListener("click", (e) => {
     false,
   );
   const id = hits[0]?.object.userData.storefrontId as StorefrontId | undefined;
-  if (id) openClaim(id);
+  if (id) {
+    openClaim(id);
+    return;
+  }
+  if (!wasDrag) walker.requestLock(canvas);
 });
 
 prompt.addEventListener("click", () => {
@@ -214,6 +278,16 @@ claimBack.addEventListener("click", () => {
 
 claimPlay.addEventListener("click", () => {
   startArcade();
+});
+
+claimPrev.addEventListener("click", () => {
+  if (!activeStorefront) return;
+  renderClaim(activeStorefront, claimIndex - 1);
+});
+
+claimNext.addEventListener("click", () => {
+  if (!activeStorefront) return;
+  renderClaim(activeStorefront, claimIndex + 1);
 });
 
 arcadeExit.addEventListener("click", () => {

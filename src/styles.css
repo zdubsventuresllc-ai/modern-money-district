@@ -147,11 +147,23 @@ blockquote {
   display: block;
 }
 
-.placeholder-flag {
-  margin: 16px 0;
+.placeholder-flag,
+.verify-flag,
+.claim-note {
+  margin: 12px 0;
   color: var(--amber);
   font-size: 11px;
   letter-spacing: 0.04em;
+}
+
+.verify-flag.is-framing {
+  color: var(--danger);
+}
+
+.claim-note {
+  color: var(--dim);
+  max-width: 62ch;
+  line-height: 1.45;
 }
 
 .row {

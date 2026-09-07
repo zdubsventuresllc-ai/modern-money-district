@@ -27,12 +27,11 @@
       <div id="scanlines" aria-hidden="true"></div>
 
       <div id="splash" class="sheet">
-        <p class="kicker">STABLEDASH LAB · PRIVATE SPIKE</p>
+        <p class="kicker">STABLEDASH LAB · EP 56</p>
         <h1>MODERN MONEY<br />DISTRICT</h1>
         <p class="lede">
           A walkable block. Four storefronts. One settlement run.
-          Claims are labeled placeholders until Content Ops drops real guest
-          tape.
+          Guest claims from Stabledash Live Ep 56 — cited, not invented.
         </p>
         <button type="button" id="enter-btn" class="btn primary">
           ENTER THE BLOCK
@@ -61,19 +60,20 @@
           <p class="controls-title">CONTROLS</p>
           <ul>
             <li><kbd>WASD</kbd> / <kbd>↑↓←→</kbd> walk</li>
-            <li><kbd>mouse</kbd> look · drag on pad</li>
+            <li><kbd>mouse</kbd> lock look · drag to look</li>
             <li><kbd>E</kbd> / tap door enter</li>
             <li><kbd>Esc</kbd> release look / back</li>
           </ul>
         </aside>
 
-        <p id="look-hint" class="look-hint hidden">CLICK TO LOOK</p>
+        <p id="look-hint" class="look-hint hidden">CLICK TO LOCK · DRAG TO LOOK</p>
       </div>
 
       <div id="claim" class="sheet hidden" role="dialog" aria-modal="true">
         <p class="kicker" id="claim-kicker">STOREFRONT</p>
         <h2 id="claim-name">STOREFRONT</h2>
         <p class="guest-said">GUEST SAID…</p>
+        <p id="claim-verify" class="verify-flag"></p>
         <blockquote id="claim-text"></blockquote>
         <p class="byline">
           — <span id="claim-guest"></span>
@@ -82,6 +82,7 @@
           <span class="lbl">EPISODE</span>
           <span id="claim-episode"></span>
         </p>
+        <p id="claim-note" class="claim-note hidden"></p>
         <div class="row">
           <a
             id="claim-episode-link"
@@ -91,14 +92,8 @@
             rel="noopener noreferrer"
             >OPEN EPISODE ↗</a
           >
-          <a
-            id="claim-clip-link"
-            class="btn hidden"
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            >OPEN CLIP ↗</a
-          >
+          <button type="button" id="claim-prev" class="btn hidden">PREV</button>
+          <button type="button" id="claim-next" class="btn hidden">NEXT</button>
         </div>
         <p class="placeholder-flag" id="claim-notice"></p>
         <div class="row">
