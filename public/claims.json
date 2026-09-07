@@ -1,0 +1,35 @@
+{
+  "notice": "PLACEHOLDER — replace with Content Ops claims. Every string below is an obviously-fake demo fixture. Do not treat as market facts, guest quotes, or episode inventory.",
+  "claims": [
+    {
+      "storefrontId": "stablecoin-shop",
+      "guestName": "DEMO GUEST A (PLACEHOLDER)",
+      "claim": "PLACEHOLDER — Guest said… “A peg is a Tuesday problem if your reserves are a Monday habit.” This is not a real quote and not a market fact.",
+      "episodeTitle": "[DEMO] Episode 00 — Not a real episode",
+      "episodeUrl": "https://example.invalid/stabledash/demo-episode-00",
+      "clipUrl": "https://example.invalid/stabledash/demo-clip-00"
+    },
+    {
+      "storefrontId": "rails-station",
+      "guestName": "DEMO GUEST B (PLACEHOLDER)",
+      "claim": "PLACEHOLDER — Guest said… “ACH is a schedule. Cards are a mood. USDC is a timestamp.” Fake rails copy for the lab spike only.",
+      "episodeTitle": "[DEMO] Episode 00 — Clearing window (not real)",
+      "episodeUrl": "https://example.invalid/stabledash/demo-episode-rails"
+    },
+    {
+      "storefrontId": "policy-desk",
+      "guestName": "DEMO GUEST C (PLACEHOLDER)",
+      "claim": "PLACEHOLDER — Guest said… “The rulebook is the product surface. Everything else is costume.” Demo policy-desk string; replace with a cited episode.",
+      "episodeTitle": "[DEMO] Episode 00 — Desk hours (not real)",
+      "episodeUrl": "https://example.invalid/stabledash/demo-episode-policy",
+      "clipUrl": "https://example.invalid/stabledash/demo-clip-policy"
+    },
+    {
+      "storefrontId": "agent-pay-arcade",
+      "guestName": "DEMO GUEST D (PLACEHOLDER)",
+      "claim": "PLACEHOLDER — Guest said… “Agent pay only works if settlement is boring and fast.” Arcade beat fixture — not an industry claim.",
+      "episodeTitle": "[DEMO] Episode 00 — Settlement run (not real)",
+      "episodeUrl": "https://example.invalid/stabledash/demo-episode-arcade"
+    }
+  ]
+}
