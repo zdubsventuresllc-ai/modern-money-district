@@ -120,7 +120,9 @@ function setMode(next: GameMode): void {
 function renderClaim(id: StorefrontId, index: number): void {
   const def = STOREFRONTS.find((s) => s.id === id);
   const list = claims ? claimsFor(claims, id) : [];
-  const safeIndex = list.length ? ((index % list.length) + list.length) % list.length : 0;
+  const safeIndex = list.length
+    ? ((index % list.length) + list.length) % list.length
+    : 0;
   claimIndex = safeIndex;
   const claim: Claim | undefined = list[safeIndex];
   claimKicker.textContent = def?.subtitle ?? "STOREFRONT";
@@ -162,8 +164,10 @@ function renderClaim(id: StorefrontId, index: number): void {
 
 function openClaim(id: StorefrontId): void {
   activeStorefront = id;
-  claimIndex = 0;
-  renderClaim(id, 0);
+  const list = claims ? claimsFor(claims, id) : [];
+  const firstTape = list.findIndex((c) => c.verified);
+  claimIndex = firstTape >= 0 ? firstTape : 0;
+  renderClaim(id, claimIndex);
   setMode("claim");
 }
 

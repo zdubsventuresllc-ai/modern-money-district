@@ -2,7 +2,7 @@
 
 Stabledash lab spike: a **small walkable Three.js city block** (not an open world) and an **Agent Pay Arcade** settlement-run. Overnight playable prototype. Terminal / data-brutalism. Amber on black.
 
-Claims in `public/claims.json` are grounded in **Stabledash Live Ep 56** (2026-09-03) plus the 8/20 Tenderly extract. Quotes are not rewritten. Prefer `verified: true` in the UI; `verified: false` is labeled **product framing / confirm on-air**.
+Claims in `public/claims.json` are grounded in **Stabledash Live Ep 56** (2026-09-03) plus the 8/20 Tenderly extract. Quotes are not rewritten. Prefer `verified: true` in the UI; `verified: false` is never presented as tape and is badged **product framing / confirm on-air**.
 
 ## What shipped
 
@@ -46,7 +46,7 @@ npm run preview
 
 ## Claims schema
 
-`public/claims.json` uses Content Ops fields (`storefront`, not `storefrontId`):
+Loader accepts dual field names (`storefront` ↔ `storefrontId`, `guest` ↔ `guestName`, `quote` ↔ `claim`, `episode` ↔ `episodeTitle`, `videoUrl` ↔ `episodeUrl`). Canonical file on this branch uses Content Ops names. `verified: false` is never shown as on-air tape — hidden from the arcade strip and badged **product framing / confirm on-air** if paged to.
 
 ```json
 {
