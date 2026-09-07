@@ -101,15 +101,15 @@ export class SettlementRun {
   private lastResult: number | null = null;
 
   constructor() {
-    this.scene.background = new THREE.Color(palette.charcoal);
-    this.scene.fog = new THREE.Fog(palette.charcoal, 28, 90);
+    this.scene.background = new THREE.Color(0x1a1c17);
+    this.scene.fog = new THREE.Fog(0x1a1c17, 40, 110);
 
-    const hemi = new THREE.HemisphereLight(0xf5f5f7, 0x11100e, 0.4);
+    const hemi = new THREE.HemisphereLight(0xf5f5f7, 0x11100e, 0.55);
     this.scene.add(hemi);
-    const key = new THREE.DirectionalLight(0xf5f5f7, 1.1);
+    const key = new THREE.DirectionalLight(0xf5f5f7, 1.25);
     key.position.set(6, 14, 8);
     this.scene.add(key);
-    this.scene.add(new THREE.AmbientLight(0x11100e, 0.2));
+    this.scene.add(new THREE.AmbientLight(0x2a2c26, 0.28));
 
     const trough = new THREE.Mesh(
       new THREE.BoxGeometry(9.2, 0.2, TRACK_LEN + 20),

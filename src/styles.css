@@ -117,11 +117,11 @@ body,
 .glass {
   margin: 0 max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
   padding: 22px 22px 20px;
-  background: rgba(26, 28, 23, 0.48);
-  border: 1px solid rgba(245, 245, 247, 0.16);
+  max-height: min(78vh, 720px);
+  overflow: auto;
+  background: rgba(26, 28, 23, 0.88);
+  border: 1px solid rgba(245, 245, 247, 0.22);
   border-radius: 6px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
 .stats {
@@ -485,11 +485,9 @@ kbd {
   width: min(42rem, calc(100% - 24px));
   margin: 0 12px max(16px, env(safe-area-inset-bottom));
   padding: 22px;
-  background: rgba(26, 28, 23, 0.48);
-  border: 1px solid rgba(245, 245, 247, 0.16);
+  background: rgba(26, 28, 23, 0.88);
+  border: 1px solid rgba(245, 245, 247, 0.22);
   border-radius: 6px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
 #onboard-skip {
