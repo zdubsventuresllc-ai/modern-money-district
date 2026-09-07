@@ -14,6 +14,7 @@ interface PegState {
   price: number;
   held: number;
   shockT: number;
+  pending: boolean;
 }
 
 interface RailsState {
@@ -33,7 +34,7 @@ export function createBeats(root: {
   onComplete: (id: BeatKind) => void;
 }): BeatController {
   let active: BeatKind | null = null;
-  let peg: PegState = { price: 1, held: 0, shockT: 0 };
+  let peg: PegState = { price: 1, held: 0, shockT: 0, pending: false };
   let rails: RailsState = { seen: new Set() };
   let policy: PolicyState = { phase: "idle" };
   let unbind: (() => void) | null = null;
@@ -120,7 +121,7 @@ export function createBeats(root: {
   }
 
   function resetPeg(message: string): void {
-    peg = { price: 1, held: 0, shockT: 0 };
+    peg = { price: 1, held: 0, shockT: 0, pending: false };
     root.status.textContent = message;
     renderPeg();
   }
@@ -132,10 +133,13 @@ export function createBeats(root: {
     if (!act || !active) return;
 
     if (active === "stablecoin-shop" && act === "defend") {
-      peg.price = Math.min(1.004, peg.price + 0.038);
-      if (pegBand() === "held") {
+      peg.price = Math.min(1.004, peg.price + 0.05);
+      if (peg.pending && peg.price >= 0.99) {
+        peg.pending = false;
         peg.held += 1;
         root.status.textContent = `Peg held. ${peg.held}/3 redemption waves.`;
+      } else if (!peg.pending) {
+        root.status.textContent = "Peg firm. Wait for the next redemption wave.";
       } else {
         root.status.textContent = "Still soft. Hit reserves again.";
       }
@@ -193,7 +197,7 @@ export function createBeats(root: {
     paintChrome(id);
     root.status.textContent = "Do the move. The cite is the punchline.";
     if (id === "stablecoin-shop") {
-      peg = { price: 1, held: 0, shockT: 1.6 };
+      peg = { price: 1, held: 0, shockT: 1.2, pending: false };
       renderPeg();
     } else if (id === "rails-station") {
       rails = { seen: new Set() };
@@ -208,14 +212,15 @@ export function createBeats(root: {
 
   function update(dt: number): void {
     if (active !== "stablecoin-shop") return;
-    peg.price -= dt * 0.012;
+    peg.price -= dt * 0.006;
     peg.shockT += dt;
-    if (peg.shockT >= 3.4) {
+    if (peg.shockT >= 5) {
       peg.shockT = 0;
-      peg.price -= 0.028;
+      peg.pending = true;
+      peg.price = Math.max(0.94, peg.price - 0.04);
       root.status.textContent = "Redemption wave. The peg slipped.";
     }
-    if (peg.price < 0.93) {
+    if (peg.price < 0.92) {
       resetPeg("Depeg. No reserves, no dollar. Try again.");
       return;
     }
