@@ -65,6 +65,8 @@ npm run preview
 
 `npm run build` typechecks, then writes static `dist/`. `npm run preview` serves `dist/` on port **8766**.
 
+Lab deep-link (skips the street walk): `?door=arcade` | `stablecoin` | `rails` | `policy` after **Enter**. Arcade still starts the run — no claim until settle.
+
 ## Claims
 
 Loader still accepts dual field names. `verified: false` is never shown as on-air tape — badged **product framing / confirm on-air**. Arcade HUD does not treat unverified rows as tape.

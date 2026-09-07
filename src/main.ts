@@ -375,7 +375,22 @@ function updateOnboard(dt: number): void {
   if (onboardT >= 8.2) dropToStreet();
 }
 
+function bootDoor(): StorefrontId | null {
+  const raw = new URLSearchParams(location.search).get("door");
+  if (raw === "arcade" || raw === "agent-pay-arcade") return "agent-pay-arcade";
+  if (raw === "stablecoin" || raw === "stablecoin-shop") return "stablecoin-shop";
+  if (raw === "rails" || raw === "rails-station") return "rails-station";
+  if (raw === "policy" || raw === "policy-desk") return "policy-desk";
+  return null;
+}
+
 enterBtn.addEventListener("click", () => {
+  const door = bootDoor();
+  if (door) {
+    markOnboard();
+    enterDoor(door);
+    return;
+  }
   startOnboard();
 });
 
