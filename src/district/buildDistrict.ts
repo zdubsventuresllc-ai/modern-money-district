@@ -53,9 +53,9 @@ function windowFacade(): THREE.CanvasTexture {
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const n = (r * 17 + c * 13) % 10;
-        if (n < 3) ctx.fillStyle = "#2f3328";
-        else if (n < 6) ctx.fillStyle = "#d7d4c6";
-        else if (n < 8) ctx.fillStyle = "#d0ea66";
+        if (n < 3) ctx.fillStyle = "#2a2c26";
+        else if (n < 6) ctx.fillStyle = "#d8d6cc";
+        else if (n < 8) ctx.fillStyle = "#f5f5f7";
         else ctx.fillStyle = "#8b8b9e";
         const x = padX + c * (cellW + gapX);
         const y = padY + r * (cellH + gapY);
@@ -211,8 +211,8 @@ function buildStorefront(
     map: facade,
     roughness: 0.45,
     metalness: 0.04,
-    emissive: new THREE.Color(0x2a2e18),
-    emissiveIntensity: 0.28,
+    emissive: new THREE.Color(0xf5f5f7),
+    emissiveIntensity: 0.08,
   });
 
   addBox(
@@ -252,9 +252,9 @@ function buildStorefront(
     new THREE.BoxGeometry(doorW, doorH, 0.12),
     new THREE.MeshStandardMaterial({
       color: 0x11100e,
-      emissive: palette.lime,
-      emissiveIntensity: 0.22,
-      roughness: 0.4,
+      emissive: palette.ivory,
+      emissiveIntensity: 0.06,
+      roughness: 0.45,
     }),
   );
   door.position.set(x, doorH / 2, doorZ);
@@ -264,9 +264,9 @@ function buildStorefront(
   const frame = new THREE.Mesh(
     new THREE.BoxGeometry(doorW + 0.16, doorH + 0.16, 0.06),
     new THREE.MeshStandardMaterial({
-      color: palette.lime,
+      color: 0x2a2c26,
       emissive: palette.lime,
-      emissiveIntensity: 0.45,
+      emissiveIntensity: 0.22,
     }),
   );
   frame.position.set(x, doorH / 2, doorZ - facing * 0.05);
@@ -409,10 +409,10 @@ export function buildDistrict(): District {
     group.add(hedge);
   }
 
-  const hemi = new THREE.HemisphereLight(0xe8e4d4, 0x2a2c22, 1.15);
+  const hemi = new THREE.HemisphereLight(0xf5f5f7, 0x11100e, 0.42);
   group.add(hemi);
-  const key = new THREE.DirectionalLight(0xfff4dc, 1.7);
-  key.position.set(8, 18, 7);
+  const key = new THREE.DirectionalLight(0xf5f5f7, 1.05);
+  key.position.set(6, 16, 8);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
   key.shadow.camera.left = -20;
@@ -420,10 +420,10 @@ export function buildDistrict(): District {
   key.shadow.camera.top = 16;
   key.shadow.camera.bottom = -16;
   group.add(key);
-  const fill = new THREE.DirectionalLight(0xd0ea66, 0.28);
-  fill.position.set(-10, 8, -6);
+  const fill = new THREE.DirectionalLight(0x1a1c17, 0.35);
+  fill.position.set(-10, 6, -6);
   group.add(fill);
-  const ambient = new THREE.AmbientLight(0x6a6858, 0.35);
+  const ambient = new THREE.AmbientLight(0x11100e, 0.2);
   group.add(ambient);
 
   return {

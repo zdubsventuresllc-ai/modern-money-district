@@ -104,12 +104,12 @@ export class SettlementRun {
     this.scene.background = new THREE.Color(palette.charcoal);
     this.scene.fog = new THREE.Fog(palette.charcoal, 28, 90);
 
-    const hemi = new THREE.HemisphereLight(0xe8e4d4, 0x2a2c22, 1.1);
+    const hemi = new THREE.HemisphereLight(0xf5f5f7, 0x11100e, 0.4);
     this.scene.add(hemi);
-    const key = new THREE.DirectionalLight(0xfff4dc, 1.55);
+    const key = new THREE.DirectionalLight(0xf5f5f7, 1.1);
     key.position.set(6, 14, 8);
     this.scene.add(key);
-    this.scene.add(new THREE.AmbientLight(0x6a6858, 0.32));
+    this.scene.add(new THREE.AmbientLight(0x11100e, 0.2));
 
     const trough = new THREE.Mesh(
       new THREE.BoxGeometry(9.2, 0.2, TRACK_LEN + 20),

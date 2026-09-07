@@ -80,11 +80,11 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.28;
+renderer.toneMappingExposure = 1.12;
 
 const streetScene = new THREE.Scene();
-streetScene.background = new THREE.Color(palette.charcoal);
-streetScene.fog = new THREE.Fog(palette.charcoal, 22, 48);
+streetScene.background = new THREE.Color(palette.midnight);
+streetScene.fog = new THREE.FogExp2(0x1a1c17, 0.028);
 
 const camera = new THREE.PerspectiveCamera(
   68,
@@ -629,14 +629,14 @@ function tick(now: number): void {
 
 const doorIdle = new THREE.MeshStandardMaterial({
   color: 0x11100e,
-  emissive: palette.lime,
-  emissiveIntensity: 0.2,
-  roughness: 0.4,
+  emissive: palette.ivory,
+  emissiveIntensity: 0.06,
+  roughness: 0.45,
 });
 const doorHot = new THREE.MeshStandardMaterial({
   color: 0x11100e,
   emissive: palette.lime,
-  emissiveIntensity: 0.9,
+  emissiveIntensity: 0.4,
   roughness: 0.35,
 });
 
