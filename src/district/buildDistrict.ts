@@ -455,8 +455,8 @@ export function buildDistrict(): District {
     group,
     colliders,
     doors,
-    spawn: new THREE.Vector3(0, 1.7, -1.2),
-    spawnYaw: Math.PI,
+    spawn: new THREE.Vector3(0, 1.7, 3.2),
+    spawnYaw: 0,
   };
 }
 
