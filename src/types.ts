@@ -1,31 +1,35 @@
 export type StorefrontId =
-  | "stablecoin"
-  | "rails"
-  | "policy"
-  | "arcade";
+  | "stablecoin-shop"
+  | "rails-station"
+  | "policy-desk"
+  | "agent-pay-arcade";
+
+export type ClaimStorefront = "stablecoin" | "rails" | "policy" | "arcade";
 
 export interface Claim {
   id: string;
-  storefront: StorefrontId;
+  storefront: ClaimStorefront;
   guest: string;
   company: string;
-  role?: string;
+  role: string;
   quote: string;
   episode: string;
   date: string;
-  videoUrl?: string | null;
-  clipNote?: string;
+  videoUrl: string | null;
   verified: boolean;
   note?: string;
+  clipNote?: string;
+}
+
+export interface ClaimsMeta {
+  title: string;
+  subtitle: string;
+  sourceNote: string;
+  episodeYoutube: string;
 }
 
 export interface ClaimsFile {
-  meta: {
-    title: string;
-    subtitle: string;
-    sourceNote: string;
-    episodeYoutube?: string;
-  };
+  meta: ClaimsMeta;
   claims: Claim[];
 }
 
