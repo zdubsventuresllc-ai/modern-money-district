@@ -6,6 +6,7 @@ export interface Door {
   id: StorefrontId;
   position: THREE.Vector3;
   mesh: THREE.Mesh;
+  hit: THREE.Object3D[];
 }
 
 export interface District {
@@ -237,6 +238,7 @@ function buildStorefront(
   );
   sign.position.set(x, 5.35, faceZ + facing * 0.02);
   sign.rotation.y = facing > 0 ? 0 : Math.PI;
+  sign.userData.storefrontId = id;
   group.add(sign);
 
   const awning = new THREE.Mesh(
@@ -248,8 +250,9 @@ function buildStorefront(
 
   doors.push({
     id,
-    position: new THREE.Vector3(x, 1.2, doorZ + facing * 0.9),
+    position: new THREE.Vector3(x, 1.65, doorZ + facing * 1.7),
     mesh: door,
+    hit: [door, sign, frame],
   });
 }
 
@@ -384,12 +387,14 @@ export function buildDistrict(): District {
 export function nearestDoor(
   doors: Door[],
   pos: THREE.Vector3,
-  radius = 2.4,
+  radius = 4.6,
 ): Door | null {
   let best: Door | null = null;
   let bestD = radius;
   for (const door of doors) {
-    const d = door.position.distanceTo(pos);
+    const dx = door.position.x - pos.x;
+    const dz = door.position.z - pos.z;
+    const d = Math.hypot(dx, dz);
     if (d < bestD) {
       best = door;
       bestD = d;

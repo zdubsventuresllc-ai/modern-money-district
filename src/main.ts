@@ -256,7 +256,7 @@ canvas.addEventListener("pointerup", (e) => {
   ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(ndc, camera);
   const hits = raycaster.intersectObjects(
-    district.doors.map((d) => d.mesh),
+    district.doors.flatMap((d) => d.hit),
     false,
   );
   const id = hits[0]?.object.userData.storefrontId as StorefrontId | undefined;
