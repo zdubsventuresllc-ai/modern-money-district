@@ -104,12 +104,12 @@ export class SettlementRun {
     this.scene.background = new THREE.Color(0x1a1c17);
     this.scene.fog = new THREE.Fog(0x1a1c17, 40, 110);
 
-    const hemi = new THREE.HemisphereLight(0xf5f5f7, 0x11100e, 0.55);
+    const hemi = new THREE.HemisphereLight(0xf5f5f7, 0x11100e, 0.28);
     this.scene.add(hemi);
-    const key = new THREE.DirectionalLight(0xf5f5f7, 1.25);
+    const key = new THREE.DirectionalLight(0xf3efe6, 0.95);
     key.position.set(6, 14, 8);
     this.scene.add(key);
-    this.scene.add(new THREE.AmbientLight(0x2a2c26, 0.28));
+    this.scene.add(new THREE.AmbientLight(0x11100e, 0.2));
 
     const trough = new THREE.Mesh(
       new THREE.BoxGeometry(9.2, 0.2, TRACK_LEN + 20),
@@ -119,27 +119,28 @@ export class SettlementRun {
     this.scene.add(trough);
 
     const railMat = new THREE.MeshStandardMaterial({
-      color: palette.lime,
-      emissive: palette.lime,
-      emissiveIntensity: 0.55,
+      color: palette.gray,
+      roughness: 0.55,
     });
     for (const x of [-3.3, 3.3]) {
       const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, TRACK_LEN), railMat);
       rail.position.set(x, 0.06, TRACK_LEN / 2);
       this.scene.add(rail);
     }
-    for (const x of LANES) {
+    LANES.forEach((x, i) => {
+      const usdc = i === 2;
       const lane = new THREE.Mesh(
         new THREE.BoxGeometry(0.06, 0.02, TRACK_LEN),
         new THREE.MeshStandardMaterial({
-          color: 0x8a8274,
-          emissive: 0x3a3224,
-          emissiveIntensity: 0.2,
+          color: usdc ? palette.lime : palette.gray,
+          emissive: usdc ? palette.lime : palette.charcoal,
+          emissiveIntensity: usdc ? 0.28 : 0,
+          roughness: 0.7,
         }),
       );
       lane.position.set(x, 0.02, TRACK_LEN / 2);
       this.scene.add(lane);
-    }
+    });
 
     const wallMat = new THREE.MeshStandardMaterial({
       color: 0x161812,
@@ -165,9 +166,9 @@ export class SettlementRun {
       const tag = new THREE.Mesh(
         new THREE.PlaneGeometry(2.2, 0.45),
         new THREE.MeshBasicMaterial({
-          color: palette.lime,
+          color: palette.ivory,
           transparent: true,
-          opacity: 0.28,
+          opacity: 0.12,
         }),
       );
       tag.position.set(-4.55, 1.4, i);
@@ -180,9 +181,9 @@ export class SettlementRun {
     const finish = new THREE.Mesh(
       new THREE.BoxGeometry(9, 3.2, 0.3),
       new THREE.MeshStandardMaterial({
-        color: palette.lime,
+        color: palette.charcoal,
         emissive: palette.lime,
-        emissiveIntensity: 0.65,
+        emissiveIntensity: 0.22,
       }),
     );
     finish.position.set(0, 1.6, TRACK_LEN);
@@ -200,10 +201,10 @@ export class SettlementRun {
     this.packet = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.7, 1.1),
       new THREE.MeshStandardMaterial({
-        color: palette.lime,
+        color: palette.ivory,
         emissive: palette.lime,
-        emissiveIntensity: 1.05,
-        roughness: 0.3,
+        emissiveIntensity: 0.35,
+        roughness: 0.35,
       }),
     );
     this.scene.add(this.packet);

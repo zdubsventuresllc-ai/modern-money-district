@@ -72,33 +72,11 @@
       </div>
 
       <div id="hud" class="hud hidden" aria-live="polite">
-        <div class="hud-top">
-          <div class="hud-brand">
-            <span class="mark">LIVE</span>
-            <span class="brand-copy">
-              <strong>Modern Money District</strong>
-              <em>Pick a door · play the beat</em>
-            </span>
-          </div>
-          <div id="nearest" class="nearest">Street</div>
-        </div>
-
+        <div id="nearest" class="hud-card">Pick a door</div>
         <div id="prompt" class="prompt hidden">
-          <kbd>E</kbd>
-          <span id="prompt-label">Enter</span>
+          <span id="prompt-label">Play</span>
         </div>
-
-        <aside class="controls" aria-label="In-game controls">
-          <p class="controls-title">Controls</p>
-          <ul>
-            <li><kbd>WASD</kbd> walk</li>
-            <li><kbd>mouse</kbd> look · drag on trackpad</li>
-            <li><kbd>E</kbd> / tap door to play</li>
-            <li><kbd>Esc</kbd> back</li>
-          </ul>
-        </aside>
-
-        <p id="look-hint" class="look-hint hidden">Click to look · drag to turn</p>
+        <p id="look-hint" class="look-hint hidden">Drag to look</p>
       </div>
 
       <div id="beat" class="sheet hidden" role="dialog" aria-modal="true">

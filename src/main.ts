@@ -84,7 +84,7 @@ renderer.toneMappingExposure = 1.12;
 
 const streetScene = new THREE.Scene();
 streetScene.background = new THREE.Color(palette.midnight);
-streetScene.fog = new THREE.FogExp2(0x1a1c17, 0.028);
+streetScene.fog = new THREE.FogExp2(0x2a2c28, 0.02);
 
 const camera = new THREE.PerspectiveCamera(
   68,
@@ -580,14 +580,19 @@ function tick(now: number): void {
     if (activeDoor) {
       prompt.classList.remove("hidden");
       promptLabel.textContent = `Play ${storefrontName(activeDoor.id)}`;
-      nearestEl.textContent = storefrontName(activeDoor.id);
+      nearestEl.classList.add("hidden");
       activeDoor.mesh.material = pulseDoor(true);
+      activeDoor.sign.material = activeDoor.signHot;
     } else {
       prompt.classList.add("hidden");
-      nearestEl.textContent = "Street";
+      nearestEl.classList.remove("hidden");
+      nearestEl.textContent = "Pick a door";
     }
     for (const door of district.doors) {
-      if (door !== activeDoor) door.mesh.material = pulseDoor(false);
+      if (door !== activeDoor) {
+        door.mesh.material = pulseDoor(false);
+        door.sign.material = door.signIdle;
+      }
     }
     lookHint.classList.toggle("hidden", isCoarse() || walker.locked);
     renderer.render(streetScene, camera);
@@ -635,8 +640,8 @@ const doorIdle = new THREE.MeshStandardMaterial({
 });
 const doorHot = new THREE.MeshStandardMaterial({
   color: 0x11100e,
-  emissive: palette.lime,
-  emissiveIntensity: 0.4,
+  emissive: palette.ivory,
+  emissiveIntensity: 0.12,
   roughness: 0.35,
 });
 

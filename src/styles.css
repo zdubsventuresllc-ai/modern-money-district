@@ -398,11 +398,19 @@ blockquote {
   color: var(--gray);
 }
 
+.hud-card,
 .nearest {
-  color: var(--lime);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-align: right;
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid rgba(245, 245, 247, 0.22);
+  background: rgba(26, 28, 23, 0.88);
+  color: var(--ivory);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  padding: 10px 14px;
+  border-radius: 4px;
 }
 
 .prompt {
@@ -426,14 +434,7 @@ blockquote {
 }
 
 .controls {
-  position: absolute;
-  left: max(14px, env(safe-area-inset-left));
-  bottom: max(14px, env(safe-area-inset-bottom));
-  border: 1px solid var(--line);
-  background: var(--panel);
-  padding: 10px 12px;
-  min-width: 220px;
-  pointer-events: none;
+  display: none;
 }
 
 .controls ul {
@@ -456,13 +457,7 @@ kbd {
 }
 
 .look-hint {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: var(--ivory);
-  letter-spacing: 0.14em;
-  font-size: 12px;
+  display: none;
 }
 
 .onboard {
@@ -759,10 +754,6 @@ kbd {
 }
 
 @media (max-width: 720px) {
-  .controls {
-    display: none;
-  }
-
   .hud-top {
     flex-direction: column;
   }
