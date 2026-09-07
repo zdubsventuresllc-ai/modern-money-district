@@ -9,22 +9,20 @@
     <title>Modern Money District — Stabledash Live</title>
     <meta
       name="description"
-      content="Walk the Stabledash block. Play a door. Feel how modern money moves. Cited from Live guests — not invented."
+      content="Walk one block on a Stabledash Live night. Play a door. Feel how modern money moves. Every line is cited to a real guest and episode."
     />
     <meta name="theme-color" content="#11100e" />
     <meta name="color-scheme" content="dark" />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%2311100e' width='32' height='32'/%3E%3Crect fill='%23d0ea66' x='4' y='4' width='24' height='2'/%3E%3Ctext x='6' y='23' fill='%23f5f5f7' font-size='11' font-family='Georgia,serif'%3EMMD%3C/text%3E%3C/svg%3E"
-    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" href="./brand/live-logo.png" />
+    <link rel="apple-touch-icon" href="./brand/live-logo.png" />
+    <link rel="preload" href="./fonts/Aspekta-500.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./fonts/Aspekta-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://api.fontshare.com/v2/css?f[]=aspekta@400,500,600&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/styles.css" />
@@ -32,24 +30,38 @@
   <body>
     <div id="app">
       <canvas id="gl"></canvas>
-      <div id="vignette" aria-hidden="true"></div>
 
+      <!-- The real Stabledash Live pre-roll: muted film behind the splash, and the feed on every TV in the block. -->
+      <video
+        id="film"
+        class="film"
+        src="./media/live-intro.mp4"
+        muted
+        loop
+        playsinline
+        autoplay
+        preload="auto"
+        aria-hidden="true"
+      ></video>
+
+      <div id="grade" class="grade" aria-hidden="true"></div>
+      <div id="grain" class="grain" aria-hidden="true"></div>
+
+      <!-- SPLASH -->
       <div id="splash" class="sheet splash">
         <header class="mast">
-          <span class="wordmark">Stabledash</span>
-          <span class="mast-meta">Live · District</span>
+          <img class="live-logo" src="./brand/live-logo.png" alt="Stabledash Live" />
+          <span class="mast-meta"><i class="dot"></i>Tu &amp; Th · 12PM ET</span>
         </header>
-        <div class="sheet-inner glass">
-          <p class="kicker">Tu &amp; Th at 12PM ET</p>
+        <div class="sheet-inner">
+          <p class="ident">You’re watching</p>
           <h1>The Live Show on <em>Modern Money</em></h1>
           <p class="lede">
-            Conversations with the founders, operators, and executives updating
-            the financial system. Walk the block. Play a door. Earn the line.
+            One block, four doors, real guests. Walk it, play a beat, earn the line the
+            founders actually said on air.
           </p>
           <div class="row">
-            <button type="button" id="enter-btn" class="btn primary">
-              Enter the district
-            </button>
+            <button type="button" id="enter-btn" class="btn primary">Enter the district</button>
             <a
               class="btn"
               href="https://www.youtube.com/watch?v=YHFAFX757a0"
@@ -58,57 +70,67 @@
               >Watch Live ↗</a
             >
           </div>
-          <p class="fine">Phone: stick to walk, tap a door.</p>
+          <p class="fine">Phone: left thumb walks, tap a lit door. Desktop: WASD, click to look.</p>
         </div>
         <div class="stats" aria-label="Stabledash Live">
           <div><strong>250+</strong><span>Interviewed</span></div>
           <div><strong>10M+</strong><span>Impressions</span></div>
           <div><strong>10,000+</strong><span>Subscribed</span></div>
+          <div class="powered"><span>Powered by</span><strong>Dfns</strong></div>
         </div>
       </div>
 
+      <!-- ONBOARD: Studio lower-third banners over the first camera walk -->
       <div id="onboard" class="onboard hidden">
-        <div class="onboard-inner">
-          <p class="kicker">Live night · one block</p>
-          <h2 id="onboard-line">Money still waits on bank hours.</h2>
-          <button type="button" id="onboard-skip" class="btn ghost">Skip</button>
+        <div class="lower-third">
+          <p class="lt-kicker"><i class="dot"></i><span id="onboard-kicker">Live night · one block</span></p>
+          <h2 id="onboard-line" class="lt-headline">MONEY STILL WAITS ON BANK HOURS</h2>
+          <p id="onboard-text" class="lt-text"></p>
         </div>
+        <button type="button" id="onboard-skip" class="btn ghost skip">Skip intro</button>
       </div>
 
+      <!-- STREET HUD -->
       <div id="hud" class="hud hidden" aria-live="polite">
-        <div id="nearest" class="hud-card">Pick a door</div>
+        <img class="hud-logo" src="./brand/live-logo.png" alt="" aria-hidden="true" />
+        <div id="nearest" class="hud-card">Pick a lit door</div>
         <div id="prompt" class="prompt hidden">
+          <span class="prompt-kicker">Enter</span>
           <span id="prompt-label">Play</span>
         </div>
-        <p id="look-hint" class="look-hint hidden">Drag to look</p>
+        <p id="look-hint" class="look-hint hidden">Click the street to look around</p>
       </div>
 
+      <!-- DOOR STING: the real MoveMe ident, one second -->
+      <div id="sting" class="sting hidden" aria-hidden="true">
+        <video id="sting-video" src="./media/moveme.mp4" muted playsinline preload="auto"></video>
+      </div>
+
+      <!-- BEAT -->
       <div id="beat" class="sheet hidden" role="dialog" aria-modal="true">
-        <div class="sheet-inner glass">
-          <p class="kicker" id="beat-kicker">Play the beat</p>
-          <h2 id="beat-title">Storefront</h2>
+        <div class="sheet-inner card">
+          <p class="lt-kicker"><i class="dot"></i><span id="beat-kicker">Play the beat</span></p>
+          <h2 id="beat-title" class="lt-headline">STOREFRONT</h2>
           <p class="lede" id="beat-lede"></p>
           <div id="beat-stage"></div>
           <p class="beat-status" id="beat-status"></p>
           <div class="row">
-            <button type="button" id="beat-back" class="btn ghost">
-              Back to street
-            </button>
+            <button type="button" id="beat-back" class="btn ghost">Back to street</button>
           </div>
         </div>
       </div>
 
+      <!-- CLAIM: the guest's name card + line -->
       <div id="claim" class="sheet hidden" role="dialog" aria-modal="true">
-        <div class="sheet-inner glass">
-          <p class="kicker" id="claim-kicker">You felt it</p>
-          <h2 id="claim-name">Storefront</h2>
+        <div class="sheet-inner card">
+          <p class="lt-kicker"><i class="dot"></i><span id="claim-kicker">You felt it</span></p>
+          <h2 id="claim-name" class="lt-headline">STOREFRONT</h2>
           <p class="lesson" id="claim-lesson"></p>
-          <p class="guest-said">Guest said…</p>
-          <p id="claim-verify" class="verify-flag"></p>
+          <div class="namecard">
+            <p class="namecard-live">LIVE with <span id="claim-guest"></span></p>
+            <p id="claim-verify" class="verify-flag"></p>
+          </div>
           <blockquote id="claim-text"></blockquote>
-          <p class="byline">
-            — <span id="claim-guest"></span>
-          </p>
           <p class="episode">
             <span class="lbl">Episode</span>
             <span id="claim-episode"></span>
@@ -117,58 +139,51 @@
           <div class="row">
             <a
               id="claim-episode-link"
-              class="btn"
+              class="btn primary"
               href="#"
               target="_blank"
               rel="noopener noreferrer"
-              >Watch episode ↗</a
+              >Watch the episode ↗</a
             >
+            <button type="button" id="claim-back" class="btn">Back to street</button>
           </div>
           <p class="placeholder-flag" id="claim-notice"></p>
-          <div class="row">
-            <button type="button" id="claim-back" class="btn">
-              Back to street
-            </button>
-          </div>
         </div>
       </div>
 
+      <!-- ARCADE HUD -->
       <div id="arcade-hud" class="arcade-hud hidden">
         <div class="arcade-top">
-          <span>Settlement Run</span>
-          <span id="arcade-clock">T+ 00:00.0</span>
+          <span class="arcade-title"><i class="dot"></i>Settlement Run</span>
+          <span id="arcade-clock" class="arcade-clock">T+ 00:00.0</span>
           <span id="arcade-ghost">Ghost —</span>
         </div>
         <p class="arcade-coach" id="arcade-coach"></p>
+        <p class="arcade-hit hidden" id="arcade-hit"></p>
         <div class="arcade-lanes" id="arcade-lanes">
           <span data-lane="0">ACH</span>
           <span data-lane="1">Cards</span>
           <span data-lane="2" class="is-hot">USDC</span>
         </div>
-        <aside class="controls arcade-controls" aria-label="Arcade controls">
-          <p class="controls-title">Arcade</p>
-          <ul>
-            <li><kbd>A D</kbd> / swipe change rail</li>
-            <li><kbd>Esc</kbd> abort to street</li>
-          </ul>
-        </aside>
-        <button type="button" id="arcade-exit" class="btn ghost">
-          Exit to street
-        </button>
+        <p class="arcade-help">Tap left / right half to change rail · <kbd>A</kbd> <kbd>D</kbd></p>
+        <button type="button" id="arcade-exit" class="btn ghost">Exit</button>
         <div id="countdown" class="countdown hidden">3</div>
       </div>
 
+      <!-- ARCADE RESULT -->
       <div id="arcade-result" class="sheet hidden" role="dialog">
-        <div class="sheet-inner glass">
-          <p class="kicker">Agent Pay Arcade</p>
-          <h2 id="result-title">Settled</h2>
+        <div class="sheet-inner card">
+          <p class="lt-kicker"><i class="dot"></i>Agent Pay Arcade</p>
+          <h2 id="result-title" class="lt-headline">SETTLED</h2>
           <p class="result-time" id="result-time">00:00.0</p>
           <p id="result-ghost" class="byline"></p>
+          <p id="result-tally" class="tally"></p>
           <p class="lesson" id="result-lesson"></p>
-          <p class="guest-said">Guest said…</p>
-          <p id="result-verify" class="verify-flag"></p>
+          <div class="namecard">
+            <p class="namecard-live">LIVE with <span id="result-byline"></span></p>
+            <p id="result-verify" class="verify-flag"></p>
+          </div>
           <blockquote id="result-claim"></blockquote>
-          <p class="byline" id="result-byline"></p>
           <div class="row">
             <a
               id="result-episode-link"
@@ -176,19 +191,13 @@
               href="#"
               target="_blank"
               rel="noopener noreferrer"
-              >Watch episode ↗</a
+              >Watch the episode ↗</a
             >
-            <button type="button" id="result-copy" class="btn ghost">
-              Copy time
-            </button>
+            <button type="button" id="result-copy" class="btn ghost">Copy time</button>
           </div>
           <div class="row">
-            <button type="button" id="result-again" class="btn primary">
-              Run again
-            </button>
-            <button type="button" id="result-street" class="btn">
-              Back to street
-            </button>
+            <button type="button" id="result-again" class="btn primary">Run again</button>
+            <button type="button" id="result-street" class="btn">Back to street</button>
           </div>
         </div>
       </div>

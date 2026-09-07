@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import { palette } from "../theme";
 
-const STORAGE_KEY = "mmd-arcade-ghost-v1";
-const LANES = [-2.2, 0, 2.2] as const;
+const STORAGE_KEY = "mmd-arcade-ghost-v2";
+// Camera looks down +z, so world +x is screen-left: ACH (lane 0) left, USDC (lane 2) right.
+const LANES = [2.2, 0, -2.2] as const;
 export const LANE_NAMES = ["ACH", "Cards", "USDC"] as const;
 const TRACK_LEN = 260;
 const BASE_SPEED = 22;
@@ -28,6 +29,7 @@ interface Hazard {
   lane: number;
   z: number;
   kind: "block" | "boost";
+  copy: string;
   hit: boolean;
 }
 
@@ -58,6 +60,37 @@ function labelTexture(text: string, danger: boolean): THREE.CanvasTexture {
   ctx.fillText(text, 256, 80);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function tileTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("2d context unavailable");
+  ctx.fillStyle = "#1b1b18";
+  ctx.fillRect(0, 0, 512, 256);
+  ctx.strokeStyle = "rgba(245,245,247,0.09)";
+  ctx.lineWidth = 2;
+  for (let y = 0; y < 256; y += 32) {
+    for (let x = 0; x < 512; x += 64) {
+      const off = (y / 32) % 2 === 0 ? 0 : 32;
+      ctx.strokeRect(x + off, y, 64, 32);
+    }
+  }
+  ctx.fillStyle = "#d0ea66";
+  ctx.fillRect(0, 118, 512, 14);
+  ctx.fillStyle = "#f5f5f7";
+  ctx.font = "500 40px Aspekta, sans-serif";
+  ctx.fillText("SETTLEMENT", 30, 200);
+  ctx.fillStyle = "#8b8b9e";
+  ctx.font = "400 28px Aspekta, sans-serif";
+  ctx.fillText("CORRIDOR  ·  T+0 AHEAD", 300, 200);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.repeat.set(TRACK_LEN / 6, 1);
   return tex;
 }
 
@@ -99,10 +132,13 @@ export class SettlementRun {
   private readonly hazards: Hazard[] = [];
   private readonly recorded: GhostFrame[] = [];
   private lastResult: number | null = null;
+  /** Last collision, for the HUD flash. */
+  lastHit: { text: string; bad: boolean; at: number } | null = null;
+  readonly tally = { fees: 0, delays: 0, clears: 0 };
 
   constructor() {
-    this.scene.background = new THREE.Color(0x1a1c17);
-    this.scene.fog = new THREE.Fog(0x1a1c17, 40, 110);
+    this.scene.background = new THREE.Color(0x11100e);
+    this.scene.fog = new THREE.Fog(0x11100e, 34, 105);
 
     const hemi = new THREE.HemisphereLight(0xf5f5f7, 0x11100e, 0.28);
     this.scene.add(hemi);
@@ -146,10 +182,57 @@ export class SettlementRun {
       color: palette.midnight,
       roughness: 0.8,
     });
+    const tile = tileTexture();
+    const tileMat = new THREE.MeshStandardMaterial({
+      map: tile,
+      roughness: 0.55,
+      emissive: new THREE.Color(0xffffff),
+      emissiveMap: tile,
+      emissiveIntensity: 0.16,
+    });
     for (const x of [-4.8, 4.8]) {
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.4, TRACK_LEN), wallMat);
-      wall.position.set(x, 1.1, TRACK_LEN / 2);
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.8, TRACK_LEN), wallMat);
+      wall.position.set(x, 1.3, TRACK_LEN / 2);
       this.scene.add(wall);
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(TRACK_LEN, 2.6), tileMat);
+      face.position.set(x - Math.sign(x) * 0.21, 1.3, TRACK_LEN / 2);
+      face.rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2;
+      this.scene.add(face);
+    }
+    // cross ties every few metres so speed reads
+    const tieMat = new THREE.MeshStandardMaterial({ color: 0x2a2a27, roughness: 0.9 });
+    const tieGeo = new THREE.BoxGeometry(8.6, 0.04, 0.35);
+    for (let z = 2; z < TRACK_LEN; z += 4) {
+      const tie = new THREE.Mesh(tieGeo, tieMat);
+      tie.position.set(0, -0.09, z);
+      this.scene.add(tie);
+    }
+    // ceiling + hanging station signs so the corridor reads as a tunnel, not a void
+    const ceiling = new THREE.Mesh(
+      new THREE.PlaneGeometry(10.2, TRACK_LEN + 20),
+      new THREE.MeshStandardMaterial({ color: 0x141412, roughness: 0.95, side: THREE.DoubleSide }),
+    );
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.set(0, 4.4, TRACK_LEN / 2);
+    this.scene.add(ceiling);
+    const signs = ["NEXT STOP · T+0", "MIND THE DEPEG", "COMPLIANCE HOLD AHEAD", "USDC · EXPRESS", "SETTLEMENT CORRIDOR"];
+    for (let z = 30, i = 0; z < TRACK_LEN - 20; z += 42, i += 1) {
+      const sign = new THREE.Mesh(
+        new THREE.PlaneGeometry(4.2, 1.05),
+        new THREE.MeshBasicMaterial({ map: labelTexture(signs[i % signs.length], i % 3 === 1), side: THREE.DoubleSide }),
+      );
+      sign.position.set(0, 3.6, z);
+      sign.rotation.y = Math.PI;
+      this.scene.add(sign);
+    }
+    // overhead lamps down the corridor
+    for (let z = 10; z < TRACK_LEN; z += 26) {
+      const bar = new THREE.Mesh(
+        new THREE.BoxGeometry(9.6, 0.08, 0.3),
+        new THREE.MeshStandardMaterial({ color: 0xf5f5f7, emissive: 0xf5f5f7, emissiveIntensity: 0.8 }),
+      );
+      bar.position.set(0, 3.2, z);
+      this.scene.add(bar);
     }
 
     LANE_NAMES.forEach((name, i) => {
@@ -271,6 +354,7 @@ export class SettlementRun {
           lane,
           z,
           kind: danger ? "block" : "boost",
+          copy,
           hit: false,
         });
       }
@@ -297,6 +381,7 @@ export class SettlementRun {
           lane: 2,
           z: boostZ,
           kind: "boost",
+          copy: "USDC CLEAR",
           hit: false,
         });
       }
@@ -317,6 +402,10 @@ export class SettlementRun {
     this.slowT = 0;
     this.recorded.length = 0;
     this.lastResult = null;
+    this.lastHit = null;
+    this.tally.fees = 0;
+    this.tally.delays = 0;
+    this.tally.clears = 0;
     for (const h of this.hazards) {
       h.hit = false;
       h.mesh.visible = true;
@@ -383,7 +472,8 @@ export class SettlementRun {
     if (this.phase === "countdown") return "Three rails. One settlement.";
     if (this.time < 2.2) return "ACH waits. Cards tax.";
     if (this.time < 5) return "USDC clears T+0. Stay on the lime rail.";
-    if (this.time < TRAILER_S) return "Dodge depeg. Dodge compliance.";
+    if (this.time < TRAILER_S) return "Dodge depeg. Dodge the compliance hold.";
+    if (this.z > TRACK_LEN * 0.82) return "Finish line: T+0.";
     return "";
   }
 
@@ -404,8 +494,31 @@ export class SettlementRun {
       if (Math.abs(h.z - this.z) > 0.9) continue;
       h.hit = true;
       h.mesh.visible = false;
-      if (h.kind === "block") this.slowT = 0.7;
-      else this.boostT = 0.85;
+      if (h.kind === "block") {
+        this.slowT = 0.7;
+        const fee = h.copy === "CARD HOLD";
+        if (fee) this.tally.fees += 1;
+        else this.tally.delays += 1;
+        this.lastHit = {
+          text: fee
+            ? "Card hold · 2.9% + FX skimmed"
+            : h.copy === "DEPEG"
+              ? "Depeg · your dollar is not a dollar"
+              : h.copy === "COMPLIANCE" || h.copy === "KYC QUEUE"
+                ? `${h.copy.toLowerCase()} · settlement paused`
+                : "ACH hold · lands next business day",
+          bad: true,
+          at: this.time,
+        };
+      } else {
+        this.boostT = 0.85;
+        this.tally.clears += 1;
+        this.lastHit = {
+          text: h.copy === "RTP" ? "RTP · real-time rail, cleared" : "USDC clear · T+0, pennies",
+          bad: false,
+          at: this.time,
+        };
+      }
     }
   }
 

@@ -1,4 +1,4 @@
-import { LESSONS, STOREFRONTS } from "../theme";
+import { HEADLINES, LESSONS, STOREFRONTS } from "../theme";
 import type { StorefrontId } from "../types";
 
 export type BeatKind = Exclude<StorefrontId, "agent-pay-arcade">;
@@ -41,9 +41,14 @@ export function createBeats(root: {
 
   function paintChrome(id: BeatKind): void {
     const def = STOREFRONTS.find((s) => s.id === id);
-    root.kicker.textContent = "Play the beat · then the guest line";
-    root.title.textContent = def?.name ?? id;
-    root.lede.textContent = def?.subtitle ?? "";
+    root.kicker.textContent = `${def?.name ?? id} · play, then the guest line`;
+    root.title.textContent = HEADLINES[id];
+    root.lede.textContent =
+      id === "stablecoin-shop"
+        ? "Redemption waves hit every few seconds. Answer each one with reserves and hold $1.00 through three."
+        : id === "rails-station"
+          ? "Same $1,000, same vendor, Saturday 2am. Send it three ways and watch what each rail does."
+          : "One 5 USDC send to a vault. There is no recall desk on this rail, so simulate before you commit.";
   }
 
   function maybeComplete(id: BeatKind, ready: boolean): void {
@@ -60,14 +65,19 @@ export function createBeats(root: {
     return "soft";
   }
 
+  function pegWidth(): number {
+    return Math.max(0, Math.min(100, ((peg.price - 0.9) / 0.11) * 100));
+  }
+
   function renderPeg(): void {
     const band = pegBand();
     root.stage.innerHTML = `
       <p class="beat-prompt">Redemptions hit. Keep one dollar.</p>
       <div class="peg-meter is-${band}">
-        <span class="peg-label">USDC</span>
+        <span class="peg-label">USDC · price board</span>
         <span class="peg-price">$${peg.price.toFixed(3)}</span>
-        <span class="peg-target">Target $1.000 · ${peg.held}/3 waves held</span>
+        <span class="peg-target">Target $1.000<br>${peg.held}/3 waves held</span>
+        <span class="peg-bar"><i style="width:${pegWidth()}%"></i></span>
       </div>
       <div class="beat-actions">
         <button type="button" class="btn primary" data-act="defend">Defend with reserves</button>
@@ -77,19 +87,19 @@ export function createBeats(root: {
 
   function renderRails(): void {
     root.stage.innerHTML = `
-      <p class="beat-prompt">Vendor in Singapore. Saturday, 2am. They need it now.</p>
+      <p class="beat-prompt">Vendor in Singapore. Saturday, 2:00am. $1,000 due now. Try every rail.</p>
       <div class="beat-compare">
         <button type="button" class="rail-card ${rails.seen.has("ach") ? "is-seen" : ""}" data-act="ach">
           <strong>ACH</strong>
-          <em>T+1 · cents</em>
+          <em>Batch window closed · lands Mon 9am · cents</em>
         </button>
         <button type="button" class="rail-card ${rails.seen.has("cards") ? "is-seen" : ""}" data-act="cards">
           <strong>Cards</strong>
-          <em>Instant · 2.9%</em>
+          <em>Clears now · 2.9% + FX · $29 gone</em>
         </button>
         <button type="button" class="rail-card ${rails.seen.has("usdc") ? "is-seen" : ""}" data-act="usdc">
           <strong>USDC</strong>
-          <em>T+0 · pennies</em>
+          <em>Settles now · T+0 · pennies</em>
         </button>
       </div>
     `;
@@ -150,9 +160,9 @@ export function createBeats(root: {
 
     if (active === "rails-station") {
       const lines: Record<string, string> = {
-        ach: "Window closed. Lands Monday 9am. Cheap — and late.",
-        cards: "Clears now. 2.9% + FX. Instant tax.",
-        usdc: "Settled. T+0. The rail that does not sleep.",
+        ach: "Batch window closed. Lands Monday 9am. Cheap, and two days late.",
+        cards: "Clears now. $29 in fees plus FX. Instant, taxed.",
+        usdc: "Settled. T+0, pennies. The rail that does not sleep.",
       };
       if (lines[act]) {
         rails.seen.add(act);
@@ -195,7 +205,7 @@ export function createBeats(root: {
     stop();
     active = id;
     paintChrome(id);
-    root.status.textContent = "Do the move. The cite is the punchline.";
+    root.status.textContent = "Do the move. The guest line is the punchline.";
     if (id === "stablecoin-shop") {
       peg = { price: 1, held: 0, shockT: 1.2, pending: false };
       renderPeg();
@@ -229,8 +239,10 @@ export function createBeats(root: {
     const target = root.stage.querySelector(".peg-target");
     if (price) price.textContent = `$${peg.price.toFixed(3)}`;
     if (target) {
-      target.textContent = `Target $1.000 · ${peg.held}/3 waves held`;
+      target.innerHTML = `Target $1.000<br>${peg.held}/3 waves held`;
     }
+    const bar = root.stage.querySelector<HTMLElement>(".peg-bar i");
+    if (bar) bar.style.width = `${pegWidth()}%`;
     if (meter) {
       meter.classList.remove("is-held", "is-soft", "is-break");
       meter.classList.add(`is-${pegBand()}`);
