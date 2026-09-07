@@ -31,21 +31,35 @@
       <div id="vignette" aria-hidden="true"></div>
 
       <div id="splash" class="sheet splash">
-        <div class="sheet-inner">
+        <header class="mast">
+          <span class="wordmark">Stabledash</span>
+          <span class="mast-meta">Live · District</span>
+        </header>
+        <div class="sheet-inner glass">
           <p class="kicker">Tu &amp; Th at 12pm ET</p>
           <h1>The Live Show on <em>Modern Money</em></h1>
           <p class="lede">
-            Walk the block. Play a door. Feel how money moves — then earn the
-            guest’s line. Cited, not invented.
+            Walk the block on a Live night. Play a door. Feel how money moves —
+            then earn the guest’s line. Cited, not invented.
           </p>
           <div class="row">
             <button type="button" id="enter-btn" class="btn primary">
               Enter the district
             </button>
+            <a
+              class="btn"
+              href="https://www.youtube.com/watch?v=YHFAFX757a0"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Watch Live ↗</a
+            >
           </div>
-          <p class="fine">
-            Phone: stick to walk, tap a door. Desktop: WASD · E · click to look.
-          </p>
+          <p class="fine">Phone: stick to walk, tap a door.</p>
+        </div>
+        <div class="stats" aria-label="District">
+          <div><strong>4</strong><span>Doors to play</span></div>
+          <div><strong>1</strong><span>Settlement run</span></div>
+          <div><strong>Ep 56</strong><span>Cited guests</span></div>
         </div>
       </div>
 
@@ -88,7 +102,7 @@
       </div>
 
       <div id="beat" class="sheet hidden" role="dialog" aria-modal="true">
-        <div class="sheet-inner">
+        <div class="sheet-inner glass">
           <p class="kicker" id="beat-kicker">Play the beat</p>
           <h2 id="beat-title">Storefront</h2>
           <p class="lede" id="beat-lede"></p>
@@ -103,7 +117,7 @@
       </div>
 
       <div id="claim" class="sheet hidden" role="dialog" aria-modal="true">
-        <div class="sheet-inner">
+        <div class="sheet-inner glass">
           <p class="kicker" id="claim-kicker">You felt it</p>
           <h2 id="claim-name">Storefront</h2>
           <p class="lesson" id="claim-lesson"></p>
@@ -167,7 +181,7 @@
       </div>
 
       <div id="arcade-result" class="sheet hidden" role="dialog">
-        <div class="sheet-inner">
+        <div class="sheet-inner glass">
           <p class="kicker">Agent Pay Arcade</p>
           <h2 id="result-title">Settled</h2>
           <p class="result-time" id="result-time">00:00.0</p>
