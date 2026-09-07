@@ -22,7 +22,7 @@ New Live night → new claims in the same block. The street does not change.
 
 ## What changed in this pass
 
-- Re-skin: tokens `#11100e` `#1a1c17` `#f5f5f7` `#a7a5a0` `#8b8b9e` `#d0ea66`. Instrument Serif + Outfit. Brighter street lighting. Lime doors. Sponsor billboards (Dfns, Dakota, Breeze, HopNow, Agora, Altitude, Artemis, Kast, Coast, Movement).
+- Re-skin: tokens `#11100e` `#1a1c17` `#f5f5f7` `#a7a5a0` `#8b8b9e` `#d0ea66`. Instrument Serif + Outfit. Ivory key / charcoal fill / midnight ambient — lime only on signs, CTAs, and the hot door. Sponsor billboards (Dfns, Dakota, Breeze, HopNow, Agora, Altitude, Artemis, Kast, Coast, Movement).
 - First-run onboard (~8s). Skip + reduced-motion skip. Remembered in `localStorage` (`mmd-onboard-v1`).
 - Teach-then-reward storefronts. Claim panels no longer open cold.
 - Arcade trailer polish + punchline on the result sheet (copy time to share).
@@ -92,7 +92,7 @@ Ghost times stay in `localStorage` (`mmd-arcade-ghost-v1`).
 
 ## Brand notes
 
-- Midnight street, ivory type, lime accent. Serif for titles, sans for UI.
+- Midnight street, ivory type, lime accent (active only). Serif for titles, sans for UI.
 - Full-bleed. No cream/amber mono terminal. No purple fog. No generated faces.
 - Copy pattern after a beat: **You felt it** → one lesson → **Guest said…** → episode cite.
 - Stabledash Live night, not a generic Fable dump.
