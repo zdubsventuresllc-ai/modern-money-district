@@ -114,7 +114,11 @@ function addBox(
   group.add(mesh);
   if (collide) {
     mesh.updateMatrixWorld(true);
-    colliders.push(new THREE.Box3().setFromObject(mesh));
+    const box = new THREE.Box3().setFromObject(mesh);
+    box.expandByScalar(-0.28);
+    if (box.max.x > box.min.x && box.max.z > box.min.z) {
+      colliders.push(box);
+    }
   }
   return mesh;
 }

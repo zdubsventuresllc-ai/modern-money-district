@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 const SPEED = 6.2;
 const LOOK = 0.0022;
-const PLAYER_R = 0.38;
+const PLAYER_R = 0.3;
 const BOUNDS = 14.6;
 
 export class Walker {
@@ -114,7 +114,7 @@ export class Walker {
     if (!blocked(this.next, colliders)) this.position.z = this.next.z;
 
     this.position.x = THREE.MathUtils.clamp(this.position.x, -BOUNDS, BOUNDS);
-    this.position.z = THREE.MathUtils.clamp(this.position.z, -11.5, 11.5);
+    this.position.z = THREE.MathUtils.clamp(this.position.z, -10.8, 10.8);
     this.syncCamera();
   }
 

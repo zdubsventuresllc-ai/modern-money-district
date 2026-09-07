@@ -42,7 +42,7 @@ npm run build
 npm run preview
 ```
 
-`npm run build` typechecks, then writes a static site to `dist/`.
+`npm run build` typechecks, then writes a static site to `dist/`. `npm run preview` serves that `dist/` on port **8766**.
 
 ## Claims schema
 

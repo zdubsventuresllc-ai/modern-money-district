@@ -92,7 +92,17 @@ let activeStorefront: StorefrontId | null = null;
 let claimIndex = 0;
 let arcade: SettlementRun | null = null;
 let last = performance.now();
-const coarse = matchMedia("(pointer: coarse)").matches;
+
+function isCoarse(): boolean {
+  return matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+}
+
+function isUi(event: Event): boolean {
+  const target = event.target;
+  return target instanceof Element && Boolean(
+    target.closest("button, a, .prompt, .sheet, input"),
+  );
+}
 
 loadClaims()
   .then((file) => {
@@ -113,7 +123,7 @@ function setMode(next: GameMode): void {
   claimPanel.classList.toggle("hidden", next !== "claim");
   arcadeHud.classList.toggle("hidden", next !== "arcade");
   resultPanel.classList.toggle("hidden", next !== "arcade-result");
-  touch.classList.toggle("hidden", !(coarse && next === "street"));
+  touch.classList.toggle("hidden", !(isCoarse() && next === "street"));
   if (next !== "street") walker.exitLock();
 }
 
@@ -212,12 +222,12 @@ function returnToStreet(): void {
   arcade = null;
   walker.reset(new THREE.Vector3(6.2, 1.65, 5.2), 0);
   setMode("street");
-  if (!coarse) walker.requestLock(canvas);
+  if (!isCoarse()) walker.requestLock(canvas);
 }
 
 enterBtn.addEventListener("click", () => {
   setMode("street");
-  if (!coarse) walker.requestLock(canvas);
+  if (!isCoarse()) walker.requestLock(canvas);
 });
 
 let dragLook = false;
@@ -227,7 +237,6 @@ let dragMoved = false;
 
 canvas.addEventListener("pointerdown", (e) => {
   if (mode !== "street") return;
-  if (coarse) return;
   if (e.button !== 0) return;
   dragLook = true;
   dragMoved = false;
@@ -253,7 +262,6 @@ canvas.addEventListener("pointerup", (e) => {
   }
   const wasDrag = dragLook && dragMoved;
   dragLook = false;
-  if (coarse) return;
 
   const rect = canvas.getBoundingClientRect();
   ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
@@ -268,7 +276,7 @@ canvas.addEventListener("pointerup", (e) => {
     openClaim(id);
     return;
   }
-  if (!wasDrag) walker.requestLock(canvas);
+  if (!wasDrag && !isCoarse()) walker.requestLock(canvas);
 });
 
 prompt.addEventListener("click", () => {
@@ -277,7 +285,7 @@ prompt.addEventListener("click", () => {
 
 claimBack.addEventListener("click", () => {
   setMode("street");
-  if (!coarse) walker.requestLock(canvas);
+  if (!isCoarse()) walker.requestLock(canvas);
 });
 
 claimPlay.addEventListener("click", () => {
@@ -328,9 +336,6 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-let lookTouch: number | null = null;
-let lookX = 0;
-let lookY = 0;
 let stickTouch: number | null = null;
 
 function stickFromEvent(e: PointerEvent): void {
@@ -350,36 +355,23 @@ function stickFromEvent(e: PointerEvent): void {
 }
 
 window.addEventListener("pointerdown", (e) => {
+  if (isUi(e)) return;
   if (mode === "arcade") {
     const mid = window.innerWidth / 2;
     arcade?.shift(e.clientX < mid ? -1 : 1);
     return;
   }
   if (mode !== "street") return;
-  if (coarse && e.target instanceof Node && stick.contains(e.target)) {
+  if (isCoarse() && e.target instanceof Node && stick.contains(e.target)) {
     stickTouch = e.pointerId;
     stick.setPointerCapture(e.pointerId);
     stickFromEvent(e);
-    return;
-  }
-  if (coarse) {
-    lookTouch = e.pointerId;
-    lookX = e.clientX;
-    lookY = e.clientY;
   }
 });
 
 window.addEventListener("pointermove", (e) => {
   if (mode !== "street") return;
-  if (e.pointerId === stickTouch) {
-    stickFromEvent(e);
-    return;
-  }
-  if (e.pointerId === lookTouch) {
-    walker.lookDelta(e.clientX - lookX, e.clientY - lookY);
-    lookX = e.clientX;
-    lookY = e.clientY;
-  }
+  if (e.pointerId === stickTouch) stickFromEvent(e);
 });
 
 function endPointer(e: PointerEvent): void {
@@ -389,7 +381,6 @@ function endPointer(e: PointerEvent): void {
     walker.stick.z = 0;
     stickKnob.style.transform = "";
   }
-  if (e.pointerId === lookTouch) lookTouch = null;
 }
 
 window.addEventListener("pointerup", endPointer);
@@ -426,7 +417,7 @@ function tick(now: number): void {
     for (const door of district.doors) {
       if (door !== activeDoor) door.mesh.material = pulseDoor(now, false);
     }
-    lookHint.classList.toggle("hidden", coarse || walker.locked);
+    lookHint.classList.toggle("hidden", isCoarse() || walker.locked);
     renderer.render(streetScene, camera);
   } else if (mode === "claim" || mode === "splash") {
     renderer.render(streetScene, camera);
