@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "title": "Modern Money District",
+    "subtitle": "a Stabledash experiment",
+    "sourceNote": "Claims grounded in Stabledash Live Ep 56 (2026-09-03) Whisper titles + Ovitz extract (8/20 Tenderly). videoUrl points at public YouTube where known.",
+    "episodeYoutube": "https://www.youtube.com/watch?v=YHFAFX757a0"
+  },
+  "claims": [
+    {
+      "id": "amias-boa",
+      "storefront": "rails",
+      "guest": "Amias Gerety",
+      "company": "QED Investors",
+      "role": "Partner, Head of U.S.",
+      "quote": "I'm embarrassed to admit this, but my primary banking relationship is from the same bank that I signed up with when I was nine years old. It's Bank of America... The highest rate, I'm in it. It's under 10 bips.",
+      "episode": "Stabledash Live Ep 56",
+      "date": "2026-09-03",
+      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
+      "verified": true
+    },
+    {
+      "id": "amias-24-7",
+      "storefront": "stablecoin",
+      "guest": "Amias Gerety",
+      "company": "QED Investors",
+      "role": "Partner, Head of U.S.",
+      "quote": "Stablecoins are the first US dollar 24/7 global payment rail.",
+      "episode": "Stabledash Live Ep 56",
+      "date": "2026-09-03",
+      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
+      "verified": true,
+      "note": "Theme from full Whisper read / titles sheet Field 1"
+    },
+    {
+      "id": "blake-aave",
+      "storefront": "arcade",
+      "guest": "Blake Duncan",
+      "company": "Alchemy",
+      "role": "Lead Agent Experience Engineer",
+      "quote": "An Alchemy agent bridged 5 USDC into the best Aave pool in 30 seconds.",
+      "episode": "Stabledash Live Ep 56",
+      "date": "2026-09-03",
+      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
+      "clipNote": "Overlap clip: Alchemy - An Agent Bridged 5 USDC Into the Best Aave Pool in Thirty Seconds",
+      "verified": true
+    },
+    {
+      "id": "blake-agentpay",
+      "storefront": "arcade",
+      "guest": "Blake Duncan",
+      "company": "Alchemy",
+      "role": "Lead Agent Experience Engineer",
+      "quote": "Agent Pay lets agents pay USDC on Base with HTTP 402 — start from as little as $1, no API key, no dashboard.",
+      "episode": "Stabledash Live Ep 56",
+      "date": "2026-09-03",
+      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
+      "verified": false,
+      "note": "Grounded in Alchemy product docs from research brief; confirm exact on-air wording before public marketing"
+    },
+    {
+      "id": "kevin-align",
+      "storefront": "arcade",
+      "guest": "Kevin Leffew",
+      "company": "Coinbase Developer Platform / x402",
+      "role": "x402 co-author",
+      "quote": "Money is the alignment signal for agents.",
+      "episode": "Stabledash Live Ep 56",
+      "date": "2026-09-03",
+      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
+      "verified": true
+    },
+    {
+      "id": "halsey-paybox",
+      "storefront": "rails",
+      "guest": "Halsey Huth",
+      "company": "MoonPay / PayBox",
+      "role": "Head of Ecosystems, Partnerships, Ventures",
+      "quote": "PayBox got crypto traders onto Claude and ChatGPT — agentic surfaces, not an xAI partnership.",
+      "episode": "Stabledash Live Ep 56",
+      "date": "2026-09-03",
+      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
+      "verified": true
+    },
+    {
+      "id": "simon-10b",
+      "storefront": "rails",
+      "guest": "Simon Baksys",
+      "company": "LayerZero Labs",
+      "role": "",
+      "quote": "LayerZero moved $10B cross-chain in 30 days at 89.73% market share.",
+      "episode": "Stabledash Live Ep 56",
+      "date": "2026-09-03",
+      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
+      "verified": true
+    },
+    {
+      "id": "luke-tokenize",
+      "storefront": "stablecoin",
+      "guest": "Luke Truitt",
+      "company": "LoopScale",
+      "role": "Co-Founder & CEO",
+      "quote": "Tokenization should fund data centers and factories.",
+      "episode": "Stabledash Live Ep 56",
+      "date": "2026-09-03",
+      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
+      "verified": true
+    },
+    {
+      "id": "nebojsa-undo",
+      "storefront": "policy",
+      "guest": "Nebojsa Urosevic",
+      "company": "Tenderly",
+      "role": "Co-Founder and SVP of Engineering",
+      "quote": "The blockchain doesn't have an undo button. In a bank, you have recall procedures, reconciliation, a settlement desk. On chain, none of this exists.",
+      "episode": "Stabledash Live 2026-08-20",
+      "date": "2026-08-20",
+      "videoUrl": null,
+      "verified": true
+    },
+    {
+      "id": "nebojsa-llm",
+      "storefront": "policy",
+      "guest": "Nebojsa Urosevic",
+      "company": "Tenderly",
+      "role": "Co-Founder and SVP of Engineering",
+      "quote": "People are letting an LLM review their own transactions, and I'm heavily pushing against it — one probabilistic process auditing another.",
+      "episode": "Stabledash Live 2026-08-20",
+      "date": "2026-08-20",
+      "videoUrl": null,
+      "verified": true
+    },
+    {
+      "id": "nebojsa-sim",
+      "storefront": "policy",
+      "guest": "Nebojsa Urosevic",
+      "company": "Tenderly",
+      "role": "Co-Founder and SVP of Engineering",
+      "quote": "We've run more than 4 billion simulations over the past eight years against blockchain state.",
+      "episode": "Stabledash Live 2026-08-20",
+      "date": "2026-08-20",
+      "videoUrl": null,
+      "verified": true
+    },
+    {
+      "id": "blake-card-vs-pay",
+      "storefront": "stablecoin",
+      "guest": "Blake Duncan",
+      "company": "Alchemy",
+      "role": "Lead Agent Experience Engineer",
+      "quote": "Agent Card spends anywhere cards are accepted; Agent Pay / x402 is onchain HTTP 402 — pick the rail for the job.",
+      "episode": "Stabledash Live Ep 56",
+      "date": "2026-09-03",
+      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
+      "verified": false,
+      "note": "Product framing from research brief / Studio spine"
+    }
+  ]
+}

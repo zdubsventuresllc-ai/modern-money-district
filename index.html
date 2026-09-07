@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Modern Money District — Stabledash Lab</title>
+    <meta name="description" content="Walkable Stabledash city block and Agent Pay Arcade. Overnight lab spike." />
+    <meta name="theme-color" content="#0b0b09" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%230b0b09' width='32' height='32'/%3E%3Crect fill='%23e8a317' x='4' y='4' width='24' height='2'/%3E%3Ctext x='6' y='22' fill='%23e8a317' font-size='10' font-family='monospace'%3EMMD%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="./assets/index-DpQuPDct.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BolDNT-t.css">
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="gl"></canvas>
+      <div id="scanlines" aria-hidden="true"></div>
+      <div id="splash" class="sheet">
+        <p class="kicker">STABLEDASH LAB · EP 56 GROUNDED</p>
+        <h1>MODERN MONEY<br />DISTRICT</h1>
+        <p class="lede">A walkable block. Four storefronts. One settlement run. Guest claims from Stabledash Live Ep 56 — cited, not invented.</p>
+        <button type="button" id="enter-btn" class="btn primary">ENTER THE BLOCK</button>
+        <p class="fine">Click or tap. WASD to walk. E to enter a door.</p>
+      </div>
+      <div id="hud" class="hud hidden" aria-live="polite">
+        <div class="hud-top">
+          <div class="hud-brand">
+            <span class="mark">MMD</span>
+            <span class="brand-copy"><strong>MODERN MONEY DISTRICT</strong><em>Stabledash street · not an open world</em></span>
+          </div>
+          <div id="nearest" class="nearest">STREET</div>
+        </div>
+        <div id="prompt" class="prompt hidden"><kbd>E</kbd><span id="prompt-label">ENTER</span></div>
+        <aside class="controls" aria-label="In-game controls">
+          <p class="controls-title">CONTROLS</p>
+          <ul>
+            <li><kbd>WASD</kbd> / <kbd>↑↓←→</kbd> walk</li>
+            <li><kbd>mouse</kbd> look · drag on pad</li>
+            <li><kbd>E</kbd> / tap door enter</li>
+            <li><kbd>Esc</kbd> release look / back</li>
+          </ul>
+        </aside>
+        <p id="look-hint" class="look-hint hidden">CLICK TO LOOK</p>
+      </div>
+      <div id="claim" class="sheet hidden" role="dialog" aria-modal="true">
+        <p class="kicker" id="claim-kicker">STOREFRONT</p>
+        <h2 id="claim-name">STOREFRONT</h2>
+        <div id="claim-list" class="claim-list"></div>
+        <p class="placeholder-flag" id="claim-notice"></p>
+        <div class="row">
+          <button type="button" id="claim-back" class="btn">BACK TO STREET</button>
+          <button type="button" id="claim-play" class="btn primary hidden">PLAY SETTLEMENT RUN</button>
+        </div>
+      </div>
+      <div id="arcade-hud" class="arcade-hud hidden">
+        <div class="arcade-top">
+          <span>SETTLEMENT RUN</span>
+          <span id="arcade-clock">T+ 00:00.0</span>
+          <span id="arcade-ghost">GHOST —</span>
+        </div>
+        <p class="arcade-claim" id="arcade-claim"></p>
+        <aside class="controls arcade-controls" aria-label="Arcade controls">
+          <p class="controls-title">ARCADE</p>
+          <ul>
+            <li><kbd>A D</kbd> / <kbd>← →</kbd> change rail</li>
+            <li>swipe / tap left-right</li>
+            <li><kbd>Esc</kbd> abort to street</li>
+          </ul>
+        </aside>
+        <button type="button" id="arcade-exit" class="btn ghost">EXIT TO STREET</button>
+        <div id="countdown" class="countdown hidden">3</div>
+      </div>
+      <div id="arcade-result" class="sheet hidden" role="dialog">
+        <p class="kicker">AGENT PAY ARCADE</p>
+        <h2 id="result-title">SETTLED</h2>
+        <p class="result-time" id="result-time">00:00.0</p>
+        <p id="result-ghost" class="byline"></p>
+        <div class="row">
+          <button type="button" id="result-again" class="btn primary">RUN AGAIN</button>
+          <button type="button" id="result-street" class="btn">BACK TO STREET</button>
+        </div>
+      </div>
+      <div id="touch" class="touch hidden">
+        <div id="stick" class="stick"><div id="stick-knob" class="stick-knob"></div></div>
+      </div>
+    </div>
+  </body>
+</html>
