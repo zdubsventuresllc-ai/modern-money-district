@@ -78,6 +78,12 @@ npm run preview
 
 The site is the `dist/` folder. Relative `base: './'` so it works at a domain root or a subpath.
 
+### Live public URL (Railway)
+
+**https://web-production-6efce.up.railway.app/**
+
+Static `dist/` served from this branch. GitHub Pages could not be flipped on from the agent token (private repo, Pages API 403). The Actions workflow is still in `.github/workflows/pages.yml`.
+
 ### GitHub Pages (Actions)
 
 Workflow: `.github/workflows/pages.yml` (build `dist/`, upload Pages artifact).
@@ -90,7 +96,7 @@ One-time in the repo:
 
 `https://zdubsventuresllc-ai.github.io/modern-money-district/`
 
-Private repos need Pages enabled for the org/plan. If Pages stays off, use any static host below.
+Private repos need Pages enabled for the org/plan. If Pages stays off, use the Railway URL above.
 
 ### Cloudflare Pages
 
