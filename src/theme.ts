@@ -1,119 +1,81 @@
 import type { StorefrontDef } from "./types";
 
-/** Stabledash brand lock — midnight / charcoal / ivory / lime. */
+/** Locked Stabledash Live tokens — cinematic editorial, not amber terminal. */
 export const palette = {
-  ink: 0x11100e,
-  inkHex: "#11100e",
+  midnight: 0x11100e,
+  midnightHex: "#11100e",
   charcoal: 0x1a1c17,
   charcoalHex: "#1a1c17",
   ivory: 0xf5f5f7,
   ivoryHex: "#f5f5f7",
-  secondary: 0xa7a5a0,
-  secondaryHex: "#a7a5a0",
+  gray: 0xa7a5a0,
+  grayHex: "#a7a5a0",
   smoke: 0x8b8b9e,
   smokeHex: "#8b8b9e",
   lime: 0xd0ea66,
   limeHex: "#d0ea66",
-  /** @deprecated use lime — kept so any stray refs compile during re-skin */
-  amber: 0xd0ea66,
-  amberHex: "#d0ea66",
+  ink: 0x11100e,
+  inkHex: "#11100e",
+  asphalt: 0x1a1c17,
+  sidewalk: 0x2a2c26,
+  slate: 0x2a2c26,
+  danger: 0x8b8b9e,
+  ok: 0xd0ea66,
   cream: 0xf5f5f7,
   creamHex: "#f5f5f7",
-  navy: 0x1a1c17,
-  navyHex: "#1a1c17",
-  slate: 0x22241f,
-  asphalt: 0x141310,
-  sidewalk: 0x2a2c27,
-  dim: 0x8b8b9e,
-  danger: 0xc44b2b,
-  ok: 0xd0ea66,
 } as const;
+
+export const SPONSORS = [
+  "Dfns",
+  "Dakota",
+  "Breeze",
+  "HopNow",
+  "Agora",
+  "Altitude",
+  "Artemis",
+  "Kast",
+  "Coast",
+  "Movement",
+] as const;
 
 export const STOREFRONTS: StorefrontDef[] = [
   {
-    id: "stablecoin",
-    name: "STABLECOIN SHOP",
-    subtitle: "24/7 DOLLAR RAILS",
+    id: "stablecoin-shop",
+    name: "Stablecoin Shop",
+    subtitle: "Hold the peg",
     x: -6.2,
     z: -8.4,
     facing: 1,
   },
   {
-    id: "rails",
-    name: "RAILS STATION",
-    subtitle: "CARDS · ACH · ON-CHAIN",
+    id: "rails-station",
+    name: "Rails Station",
+    subtitle: "ACH · cards · USDC",
     x: 6.2,
     z: -8.4,
     facing: 1,
   },
   {
-    id: "policy",
-    name: "POLICY DESK",
-    subtitle: "SIM · UNDO · FAIL",
+    id: "policy-desk",
+    name: "Policy Desk",
+    subtitle: "Simulate / no undo",
     x: -6.2,
     z: 8.4,
     facing: -1,
   },
   {
-    id: "arcade",
-    name: "AGENT PAY ARCADE",
-    subtitle: "SETTLEMENT RUN",
+    id: "agent-pay-arcade",
+    name: "Agent Pay Arcade",
+    subtitle: "Settlement Run",
     x: 6.2,
     z: 8.4,
     facing: -1,
   },
 ];
 
-/** Live Stabledash sponsors — skip TEST. Logos via public CDN URLs. */
-export const SPONSORS: ReadonlyArray<{ name: string; logoUrl: string }> = [
-  {
-    name: "Dfns",
-    logoUrl:
-      "https://app.stabledash.com/storage/v1/object/public/takeone/media/images/dfns-1780415403983.png",
-  },
-  {
-    name: "Dakota",
-    logoUrl:
-      "https://app.stabledash.com/storage/v1/object/public/takeone/media/images/dakota-1779983351596.webp",
-  },
-  {
-    name: "Breeze",
-    logoUrl:
-      "https://app.stabledash.com/storage/v1/object/public/takeone/media/images/breeze-1779457546281.svg",
-  },
-  {
-    name: "HopNow",
-    logoUrl:
-      "https://app.stabledash.com/storage/v1/object/public/takeone/media/images/hopnow-logo-white-text-1781185794638.svg",
-  },
-  {
-    name: "Agora",
-    logoUrl:
-      "https://app.stabledash.com/storage/v1/object/public/takeone/media/images/agora-1779983169132.png",
-  },
-  {
-    name: "Altitude",
-    logoUrl:
-      "https://app.stabledash.com/storage/v1/object/public/takeone/media/images/altitude-1779983194741.png",
-  },
-  {
-    name: "Artemis",
-    logoUrl:
-      "https://app.stabledash.com/storage/v1/object/public/takeone/media/images/artemis-1779983258861.png",
-  },
-  {
-    name: "Kast",
-    logoUrl:
-      "https://app.stabledash.com/storage/v1/object/public/takeone/media/images/kast-1779983374014.png",
-  },
-  {
-    name: "Coast",
-    logoUrl:
-      "https://app.stabledash.com/storage/v1/object/public/takeone/media/images/coast-1779983750857.png",
-  },
-  {
-    name: "Movement",
-    logoUrl:
-      "https://app.stabledash.com/storage/v1/object/public/takeone/media/images/Logo_Movement_Full_White-1784593034063.png",
-  },
-];
+export const LESSONS: Record<StorefrontDef["id"], string> = {
+  "stablecoin-shop": "A stablecoin is a peg you keep — or a depeg you feel.",
+  "rails-station": "ACH waits. Cards tax. USDC clears T+0.",
+  "policy-desk": "On-chain has no recall desk. Simulate first.",
+  "agent-pay-arcade": "Settlement is a corridor. Pick the rail that clears.",
+};

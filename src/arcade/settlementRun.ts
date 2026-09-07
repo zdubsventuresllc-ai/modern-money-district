@@ -3,10 +3,12 @@ import { palette } from "../theme";
 
 const STORAGE_KEY = "mmd-arcade-ghost-v1";
 const LANES = [-2.2, 0, 2.2] as const;
+export const LANE_NAMES = ["ACH", "Cards", "USDC"] as const;
 const TRACK_LEN = 260;
 const BASE_SPEED = 22;
 const TIME_CAP = 55;
 const LANE_LERP = 12;
+const TRAILER_S = 8;
 
 export type ArcadePhase = "countdown" | "running" | "won" | "dnf" | "aborted";
 
@@ -30,11 +32,11 @@ interface Hazard {
 }
 
 const HAZARD_COPY = [
+  "DEPEG",
+  "COMPLIANCE",
   "ACH HOLD",
-  "BANK CLOSED",
   "CARD HOLD",
   "KYC QUEUE",
-  "SWIFT LAG",
 ] as const;
 
 const BOOST_COPY = ["USDC CLEAR", "T+0", "RTP"] as const;
@@ -47,11 +49,11 @@ function labelTexture(text: string, danger: boolean): THREE.CanvasTexture {
   if (!ctx) throw new Error("2d context unavailable");
   ctx.fillStyle = "#11100e";
   ctx.fillRect(0, 0, 512, 128);
-  ctx.strokeStyle = danger ? "#c44b2b" : "#d0ea66";
+  ctx.strokeStyle = danger ? "#8b8b9e" : "#d0ea66";
   ctx.lineWidth = 8;
   ctx.strokeRect(10, 10, 492, 108);
-  ctx.fillStyle = danger ? "#c44b2b" : "#d0ea66";
-  ctx.font = "600 42px 'DM Sans', sans-serif";
+  ctx.fillStyle = danger ? "#8b8b9e" : "#d0ea66";
+  ctx.font = "600 42px Aspekta, Outfit, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(text, 256, 80);
   const tex = new THREE.CanvasTexture(canvas);
@@ -99,48 +101,50 @@ export class SettlementRun {
   private lastResult: number | null = null;
 
   constructor() {
-    this.scene.background = new THREE.Color(palette.ink);
-    this.scene.fog = new THREE.Fog(palette.ink, 18, 70);
+    this.scene.background = new THREE.Color(0x1a1c17);
+    this.scene.fog = new THREE.Fog(0x1a1c17, 40, 110);
 
-    const hemi = new THREE.HemisphereLight(0x2a2c27, 0x11100e, 0.25);
+    const hemi = new THREE.HemisphereLight(0xf5f5f7, 0x11100e, 0.28);
     this.scene.add(hemi);
-    const key = new THREE.DirectionalLight(0xf5f5f7, 0.9);
+    const key = new THREE.DirectionalLight(0xf3efe6, 0.95);
     key.position.set(6, 14, 8);
     this.scene.add(key);
+    this.scene.add(new THREE.AmbientLight(0x11100e, 0.2));
 
     const trough = new THREE.Mesh(
       new THREE.BoxGeometry(9.2, 0.2, TRACK_LEN + 20),
-      new THREE.MeshStandardMaterial({ color: 0x1a1c17, roughness: 0.9 }),
+      new THREE.MeshStandardMaterial({ color: palette.charcoal, roughness: 0.88 }),
     );
     trough.position.set(0, -0.2, TRACK_LEN / 2);
     this.scene.add(trough);
 
     const railMat = new THREE.MeshStandardMaterial({
-      color: palette.lime,
-      emissive: palette.lime,
-      emissiveIntensity: 0.45,
+      color: palette.gray,
+      roughness: 0.55,
     });
     for (const x of [-3.3, 3.3]) {
       const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, TRACK_LEN), railMat);
       rail.position.set(x, 0.06, TRACK_LEN / 2);
       this.scene.add(rail);
     }
-    for (const x of LANES) {
+    LANES.forEach((x, i) => {
+      const usdc = i === 2;
       const lane = new THREE.Mesh(
         new THREE.BoxGeometry(0.06, 0.02, TRACK_LEN),
         new THREE.MeshStandardMaterial({
-          color: 0xa7a5a0,
-          emissive: 0x2a2c27,
-          emissiveIntensity: 0.2,
+          color: usdc ? palette.lime : palette.gray,
+          emissive: usdc ? palette.lime : palette.charcoal,
+          emissiveIntensity: usdc ? 0.28 : 0,
+          roughness: 0.7,
         }),
       );
       lane.position.set(x, 0.02, TRACK_LEN / 2);
       this.scene.add(lane);
-    }
+    });
 
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x151610,
-      roughness: 0.85,
+      color: palette.midnight,
+      roughness: 0.8,
     });
     for (const x of [-4.8, 4.8]) {
       const wall = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.4, TRACK_LEN), wallMat);
@@ -148,13 +152,23 @@ export class SettlementRun {
       this.scene.add(wall);
     }
 
+    LANE_NAMES.forEach((name, i) => {
+      const mark = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.8, 0.55),
+        new THREE.MeshBasicMaterial({ map: labelTexture(name, false) }),
+      );
+      mark.rotation.x = -Math.PI / 2;
+      mark.position.set(LANES[i], 0.04, 8);
+      this.scene.add(mark);
+    });
+
     for (let i = 12; i < TRACK_LEN - 8; i += 18) {
       const tag = new THREE.Mesh(
         new THREE.PlaneGeometry(2.2, 0.45),
         new THREE.MeshBasicMaterial({
-          color: palette.lime,
+          color: palette.ivory,
           transparent: true,
-          opacity: 0.35,
+          opacity: 0.12,
         }),
       );
       tag.position.set(-4.55, 1.4, i);
@@ -167,9 +181,9 @@ export class SettlementRun {
     const finish = new THREE.Mesh(
       new THREE.BoxGeometry(9, 3.2, 0.3),
       new THREE.MeshStandardMaterial({
-        color: palette.lime,
+        color: palette.charcoal,
         emissive: palette.lime,
-        emissiveIntensity: 0.7,
+        emissiveIntensity: 0.22,
       }),
     );
     finish.position.set(0, 1.6, TRACK_LEN);
@@ -187,10 +201,10 @@ export class SettlementRun {
     this.packet = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.7, 1.1),
       new THREE.MeshStandardMaterial({
-        color: palette.lime,
+        color: palette.ivory,
         emissive: palette.lime,
-        emissiveIntensity: 1.1,
-        roughness: 0.3,
+        emissiveIntensity: 0.35,
+        roughness: 0.35,
       }),
     );
     this.scene.add(this.packet);
@@ -213,25 +227,35 @@ export class SettlementRun {
   }
 
   private spawnHazards(): void {
-    let z = 22;
+    let z = 16;
     let i = 0;
     while (z < TRACK_LEN - 18) {
       const blocked = new Set<number>();
-      const count = i % 3 === 0 ? 2 : 1;
-      while (blocked.size < count) {
-        blocked.add(Math.floor(pseudo(z + blocked.size * 9) * 3));
+      const count = i === 0 ? 2 : i % 3 === 0 ? 2 : 1;
+      if (i === 0) {
+        blocked.add(0);
+        blocked.add(1);
+      } else {
+        while (blocked.size < count) {
+          blocked.add(Math.floor(pseudo(z + blocked.size * 9) * 3));
+        }
       }
       for (const lane of blocked) {
-        const danger = pseudo(z + lane * 17) > 0.22;
-        const copy = danger
-          ? HAZARD_COPY[Math.floor(pseudo(z + 3) * HAZARD_COPY.length)]
-          : BOOST_COPY[Math.floor(pseudo(z + 5) * BOOST_COPY.length)];
+        const scripted = i === 0;
+        const danger = scripted ? true : pseudo(z + lane * 17) > 0.22;
+        const copy = scripted
+          ? lane === 0
+            ? "DEPEG"
+            : "COMPLIANCE"
+          : danger
+            ? HAZARD_COPY[Math.floor(pseudo(z + 3) * HAZARD_COPY.length)]
+            : BOOST_COPY[Math.floor(pseudo(z + 5) * BOOST_COPY.length)];
         const mesh = new THREE.Mesh(
           new THREE.BoxGeometry(1.7, 1.05, 0.55),
           new THREE.MeshStandardMaterial({
             color: danger ? palette.danger : palette.ok,
             emissive: danger ? palette.danger : palette.lime,
-            emissiveIntensity: 0.45,
+            emissiveIntensity: 0.5,
           }),
         );
         mesh.position.set(LANES[lane], 0.55, z);
@@ -250,6 +274,32 @@ export class SettlementRun {
           hit: false,
         });
       }
+      if (i === 0) {
+        const boostZ = z + 10;
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(1.7, 1.05, 0.55),
+          new THREE.MeshStandardMaterial({
+            color: palette.ok,
+            emissive: palette.lime,
+            emissiveIntensity: 0.5,
+          }),
+        );
+        mesh.position.set(LANES[2], 0.55, boostZ);
+        this.scene.add(mesh);
+        const badge = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.6, 0.4),
+          new THREE.MeshBasicMaterial({ map: labelTexture("USDC CLEAR", false) }),
+        );
+        badge.position.set(LANES[2], 1.25, boostZ);
+        this.scene.add(badge);
+        this.hazards.push({
+          mesh,
+          lane: 2,
+          z: boostZ,
+          kind: "boost",
+          hit: false,
+        });
+      }
       z += 11 + (i % 4) * 2.5;
       i += 1;
     }
@@ -259,8 +309,8 @@ export class SettlementRun {
     this.phase = "countdown";
     this.time = 0;
     this.countdown = 3;
-    this.lane = 1;
-    this.x = LANES[1];
+    this.lane = 2;
+    this.x = LANES[2];
     this.z = 0;
     this.speed = BASE_SPEED;
     this.boostT = 0;
@@ -295,7 +345,9 @@ export class SettlementRun {
     this.time += dt;
     if (this.boostT > 0) this.boostT -= dt;
     if (this.slowT > 0) this.slowT -= dt;
-    const mul = (this.boostT > 0 ? 1.28 : 1) * (this.slowT > 0 ? 0.58 : 1);
+    const trailer = this.time < TRAILER_S ? 0.82 : 1;
+    const mul =
+      trailer * (this.boostT > 0 ? 1.28 : 1) * (this.slowT > 0 ? 0.58 : 1);
     this.speed = BASE_SPEED * mul;
     this.z += this.speed * dt;
     this.x = THREE.MathUtils.damp(this.x, LANES[this.lane], LANE_LERP, dt);
@@ -321,6 +373,18 @@ export class SettlementRun {
 
   countdownLabel(): string {
     return String(Math.max(1, Math.ceil(this.countdown)));
+  }
+
+  get laneIndex(): number {
+    return this.lane;
+  }
+
+  coachLine(): string {
+    if (this.phase === "countdown") return "Three rails. One settlement.";
+    if (this.time < 2.2) return "ACH waits. Cards tax.";
+    if (this.time < 5) return "USDC clears T+0. Stay on the lime rail.";
+    if (this.time < TRAILER_S) return "Dodge depeg. Dodge compliance.";
+    return "";
   }
 
   dispose(): void {
