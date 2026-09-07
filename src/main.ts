@@ -44,7 +44,6 @@ const claimVerify = $("claim-verify");
 const claimNote = $("claim-note");
 const claimNotice = $("claim-notice");
 const claimBack = $<HTMLButtonElement>("claim-back");
-const claimPlay = $<HTMLButtonElement>("claim-play");
 const arcadeHud = $("arcade-hud");
 const arcadeClock = $("arcade-clock");
 const arcadeGhost = $("arcade-ghost");
@@ -266,7 +265,6 @@ function openClaim(id: StorefrontId): void {
     },
     id,
   );
-  claimPlay.classList.toggle("hidden", id !== "agent-pay-arcade");
   setMode("claim");
 }
 
@@ -464,10 +462,6 @@ beatBack.addEventListener("click", () => {
 claimBack.addEventListener("click", () => {
   setMode("street");
   if (!isCoarse()) walker.requestLock(canvas);
-});
-
-claimPlay.addEventListener("click", () => {
-  startArcade();
 });
 
 arcadeExit.addEventListener("click", () => {
