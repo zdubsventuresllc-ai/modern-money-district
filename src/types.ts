@@ -42,4 +42,11 @@ export interface StorefrontDef {
   facing: 1 | -1;
 }
 
-export type GameMode = "splash" | "street" | "claim" | "arcade" | "arcade-result";
+export type GameMode =
+  | "splash"
+  | "onboard"
+  | "street"
+  | "beat"
+  | "claim"
+  | "arcade"
+  | "arcade-result";

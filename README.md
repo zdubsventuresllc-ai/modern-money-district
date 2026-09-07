@@ -1,20 +1,44 @@
 # Modern Money District
 
-Stabledash lab spike: a **small walkable Three.js city block** (not an open world) and an **Agent Pay Arcade** settlement-run. Overnight playable prototype. Terminal / data-brutalism. Amber on black.
+Stabledash Live lab spike: a **walkable Three.js city block** and an **Agent Pay Arcade** settlement run. You feel how modern money moves in under a minute, taught by real Live guests — not a quote museum.
 
-Claims in `public/claims.json` are grounded in **Stabledash Live Ep 56** (2026-09-03) plus the 8/20 Tenderly extract. Quotes are not rewritten. Prefer `verified: true` in the UI; `verified: false` is never presented as tape and is badged **product framing / confirm on-air**.
+Brand is the site: midnight / ivory / lime, serif titles, clean sans UI. Full-bleed cinematic street. No amber terminal. No narrow arcade frame.
 
-## What shipped
+Claims in `public/claims.json` stay denser (~31 rows, 4 `verified: true`). `verified: true` only for Whisper / Ovitz tape. Never invented. Dual keys (`storefront` / `storefrontId`, etc.) still load.
 
-- First-person street with four storefronts:
-  1. **Stablecoin Shop** — peg / reserves
-  2. **Rails Station** — ACH / cards / USDC
-  3. **Policy Desk**
-  4. **Agent Pay Arcade**
-- Walk up to a door → attributed “Guest said…” beat + episode link-out (optional clip link-out). No video embeds.
-- Arcade: **Settlement Run** — three-rail racer, hazards vs clears, finish gate, under 60s, ghost best time in `localStorage`.
-- In-game controls overlay on street and in arcade.
-- Static Vite build. No API. No secrets.
+## Loop
+
+**Arrive → pick a door → 20–40s playable beat → earn the cited punchline → share the ghost.**
+
+1. Title sheet (Stabledash Live energy) → ~8s first-run hook on the street.
+2. Four doors. Each **teaches by doing**, then unlocks one attributed claim:
+   - **Stablecoin Shop** — Saturday 2am wire vs 24/7 USDC rail.
+   - **Rails Station** — pick/compare ACH vs cards vs USDC.
+   - **Policy Desk** — send without a sim (no undo) vs simulate first.
+   - **Agent Pay Arcade** — Settlement Run corridor. First 8 seconds are the trailer moment (lane names, depeg / compliance, USDC clear). Full run still playable. Ghost in `localStorage`.
+3. Punchline is **Guest said…** + episode cite. Verified-tape badge only when `verified: true`. Optional YouTube **link-out**, no embeds.
+
+New Live night → new claims in the same block. The street does not change.
+
+## What changed in this pass
+
+- Re-skin: tokens `#11100e` `#1a1c17` `#f5f5f7` `#a7a5a0` `#8b8b9e` `#d0ea66`. Instrument Serif + Outfit. Brighter street lighting. Lime doors. Sponsor billboards (Dfns, Dakota, Breeze, HopNow, Agora, Altitude, Artemis, Kast, Coast, Movement).
+- First-run onboard (~8s). Skip + reduced-motion skip. Remembered in `localStorage` (`mmd-onboard-v1`).
+- Teach-then-reward storefronts. Claim panels no longer open cold.
+- Arcade trailer polish + punchline on the result sheet (copy time to share).
+- Phone HUD: virtual stick, tap-to-enter, large beat buttons. Desktop controls stay on the left.
+
+## Phone play
+
+1. Open the Railway / preview URL in Safari or Chrome.
+2. Add to Home Screen if you want full-bleed.
+3. **Enter the district.** Watch the hook or tap Skip.
+4. Left stick to walk. Tap a glowing door (or the **Play …** prompt).
+5. Do the beat with thumbs — clock tap, rail cards, simulate/send, or swipe halves in the arcade.
+6. Read the one guest line. **Watch episode ↗** leaves the game.
+7. Arcade: stay on **USDC**, dodge **depeg / compliance**. Best time is a ghost on *this* phone only.
+
+Landscape is nicer for the run; portrait is fine for the street and shop beats.
 
 ## Controls
 
@@ -22,11 +46,10 @@ Claims in `public/claims.json` are grounded in **Stabledash Live Ep 56** (2026-0
 | --- | --- | --- |
 | `W A S D` / arrows | Walk | `A D` / `← →` change rail |
 | Mouse (click to lock) | Look | — |
-| Drag / right-side touch | Look (coarse pointer) | Tap/swipe left or right half to change rail |
+| Drag / right-side touch | Look | Tap/swipe left or right half to change rail |
 | Left virtual stick | Walk (touch) | — |
-| `E` / tap prompt / click door | Enter storefront | — |
-| `Esc` | Release look / back | Abort to street |
-| On-screen **EXIT TO STREET** | — | Leave the run |
+| `E` / tap prompt / tap door | Play the beat | — |
+| `Esc` | Back | Abort to street |
 
 ## Run locally
 
@@ -35,94 +58,41 @@ npm i
 npm run dev
 ```
 
-Open the printed localhost URL. Click **ENTER THE BLOCK**.
-
 ```bash
 npm run build
 npm run preview
 ```
 
-`npm run build` typechecks, then writes a static site to `dist/`. `npm run preview` serves that `dist/` on port **8766**.
+`npm run build` typechecks, then writes static `dist/`. `npm run preview` serves `dist/` on port **8766**.
 
-## Claims schema
+## Claims
 
-Loader accepts dual field names (`storefront` ↔ `storefrontId`, `guest` ↔ `guestName`, `quote` ↔ `claim`, `episode` ↔ `episodeTitle`, `videoUrl` ↔ `episodeUrl`). Canonical file on this branch uses Content Ops names. `verified: false` is never shown as on-air tape — hidden from the arcade strip and badged **product framing / confirm on-air** if paged to.
+Loader still accepts dual field names. `verified: false` is never shown as on-air tape — badged **product framing / confirm on-air**. Arcade HUD does not treat unverified rows as tape.
 
-```json
-{
-  "meta": {
-    "title": "Modern Money District",
-    "sourceNote": "…",
-    "episodeYoutube": "https://www.youtube.com/watch?v=YHFAFX757a0"
-  },
-  "claims": [
-    {
-      "id": "amias-24-7",
-      "storefront": "stablecoin",
-      "guest": "Amias Gerety",
-      "company": "QED Investors",
-      "role": "Partner, Head of U.S.",
-      "quote": "…",
-      "episode": "Stabledash Live Ep 56",
-      "date": "2026-09-03",
-      "videoUrl": "https://www.youtube.com/watch?v=YHFAFX757a0",
-      "verified": true
-    }
-  ]
-}
-```
-
-`storefront` map: `stablecoin` → Stablecoin Shop, `rails` → Rails Station, `policy` → Policy Desk, `arcade` → Agent Pay Arcade. Episode links are YouTube link-outs.
+`storefront` map: `stablecoin` → Stablecoin Shop, `rails` → Rails Station, `policy` → Policy Desk, `arcade` → Agent Pay Arcade.
 
 ## Deploy (static)
 
-The site is the `dist/` folder. Relative `base: './'` so it works at a domain root or a subpath.
+The site is `dist/`. Relative `base: './'`. No API. No secrets.
 
 ### Live public URL (Railway)
 
 **https://web-production-6efce.up.railway.app/**
 
-Static `dist/` served from this branch. GitHub Pages could not be flipped on from the agent token (private repo, Pages API 403). The Actions workflow is still in `.github/workflows/pages.yml`.
-
-### GitHub Pages (Actions)
-
-Workflow: `.github/workflows/pages.yml` (build `dist/`, upload Pages artifact).
-
-One-time in the repo:
-
-1. **Settings → Pages → Build and deployment → Source: GitHub Actions**
-2. Merge to `main` (or run the workflow with **workflow_dispatch**)
-3. Public URL after the first successful deploy:
-
-`https://zdubsventuresllc-ai.github.io/modern-money-district/`
-
-Private repos need Pages enabled for the org/plan. If Pages stays off, use the Railway URL above.
-
-### Cloudflare Pages
-
-- Build command: `npm run build`
-- Output directory: `dist`
-- Node: `20`
-
-### Vercel
-
-- Framework preset: Vite
-- Build command: `npm run build`
-- Output: `dist`
-
-### Any static host
+Static `dist/` from this lineage. `railway.toml` builds with Nixpacks and serves `dist` on `$PORT`.
 
 ```bash
 npm i
 npm run build
 ```
 
-Upload `dist/`.
+Upload `dist/` to any static host (Cloudflare Pages output `dist`, Vercel Vite preset, etc.).
 
-Ghost times stay in the visitor’s `localStorage` (`mmd-arcade-ghost-v1`). Nothing is posted to a server.
+Ghost times stay in `localStorage` (`mmd-arcade-ghost-v1`).
 
 ## Brand notes
 
-- Cream / amber type on ink. Navy volumes. No purple fog, no cartoon crypto, no generated anchor faces.
-- Copy pattern: **Guest said…** + claim + episode cite.
-- Stabledash street, not a generic Fable dump.
+- Midnight street, ivory type, lime accent. Serif for titles, sans for UI.
+- Full-bleed. No cream/amber mono terminal. No purple fog. No generated faces.
+- Copy pattern after a beat: **You felt it** → one lesson → **Guest said…** → episode cite.
+- Stabledash Live night, not a generic Fable dump.

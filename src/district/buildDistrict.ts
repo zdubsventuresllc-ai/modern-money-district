@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { STOREFRONTS, palette } from "../theme";
+import { SPONSORS, STOREFRONTS, palette } from "../theme";
 import type { StorefrontId } from "../types";
 
 export interface Door {
@@ -40,7 +40,7 @@ function makeCanvasTexture(
 
 function windowFacade(): THREE.CanvasTexture {
   return makeCanvasTexture(512, 512, (ctx, w, h) => {
-    ctx.fillStyle = "#101820";
+    ctx.fillStyle = "#1c1e18";
     ctx.fillRect(0, 0, w, h);
     const cols = 6;
     const rows = 7;
@@ -53,10 +53,10 @@ function windowFacade(): THREE.CanvasTexture {
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const n = (r * 17 + c * 13) % 10;
-        if (n < 3) ctx.fillStyle = "#2a2416";
-        else if (n < 6) ctx.fillStyle = "#c9b48a";
-        else if (n < 8) ctx.fillStyle = "#e8a317";
-        else ctx.fillStyle = "#8a7a55";
+        if (n < 3) ctx.fillStyle = "#2f3328";
+        else if (n < 6) ctx.fillStyle = "#d7d4c6";
+        else if (n < 8) ctx.fillStyle = "#d0ea66";
+        else ctx.fillStyle = "#8b8b9e";
         const x = padX + c * (cellW + gapX);
         const y = padY + r * (cellH + gapY);
         ctx.fillRect(x, y, cellW, cellH);
@@ -67,33 +67,45 @@ function windowFacade(): THREE.CanvasTexture {
 
 function signTexture(title: string, subtitle: string): THREE.CanvasTexture {
   return makeCanvasTexture(1024, 256, (ctx, w, h) => {
-    ctx.fillStyle = "#0b0b09";
+    ctx.fillStyle = "#11100e";
     ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#e8a317";
-    ctx.lineWidth = 10;
+    ctx.strokeStyle = "#d0ea66";
+    ctx.lineWidth = 8;
     ctx.strokeRect(18, 18, w - 36, h - 36);
-    ctx.fillStyle = "#e8a317";
-    ctx.font = "600 72px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = "#f5f5f7";
+    ctx.font = "400 70px 'Instrument Serif', Georgia, serif";
     ctx.fillText(title, 48, 118);
-    ctx.fillStyle = "#e8e0d0";
-    ctx.font = "500 34px 'IBM Plex Mono', monospace";
-    ctx.fillText(subtitle, 48, 186);
+    ctx.fillStyle = "#d0ea66";
+    ctx.font = "500 32px Outfit, sans-serif";
+    ctx.fillText(subtitle.toUpperCase(), 48, 186);
   });
 }
 
 function plaqueTexture(): THREE.CanvasTexture {
   return makeCanvasTexture(1024, 256, (ctx, w, h) => {
-    ctx.fillStyle = "#0b0b09";
+    ctx.fillStyle = "#11100e";
     ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "#e8a317";
-    ctx.lineWidth = 8;
-    ctx.strokeRect(16, 16, w - 32, h - 32);
-    ctx.fillStyle = "#e8a317";
-    ctx.font = "600 48px 'IBM Plex Mono', monospace";
-    ctx.fillText("MODERN MONEY DISTRICT", 48, 110);
-    ctx.fillStyle = "#e8e0d0";
-    ctx.font = "400 28px 'IBM Plex Mono', monospace";
-    ctx.fillText("STABLEDASH STREET  ·  FOUR DOORS", 48, 168);
+    ctx.fillStyle = "#f5f5f7";
+    ctx.font = "400 52px 'Instrument Serif', Georgia, serif";
+    ctx.fillText("Modern Money District", 48, 110);
+    ctx.fillStyle = "#a7a5a0";
+    ctx.font = "400 26px Outfit, sans-serif";
+    ctx.fillText("LIVE NIGHT  ·  FOUR DOORS  ·  ONE BLOCK", 48, 168);
+  });
+}
+
+function billboardTexture(name: string): THREE.CanvasTexture {
+  return makeCanvasTexture(768, 256, (ctx, w, h) => {
+    ctx.fillStyle = "#1a1c17";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#d0ea66";
+    ctx.fillRect(0, 0, 10, h);
+    ctx.fillStyle = "#f5f5f7";
+    ctx.font = "400 72px 'Instrument Serif', Georgia, serif";
+    ctx.fillText(name, 48, 150);
+    ctx.fillStyle = "#8b8b9e";
+    ctx.font = "500 22px Outfit, sans-serif";
+    ctx.fillText("LIVE NIGHT PARTNER", 48, 200);
   });
 }
 
@@ -126,7 +138,7 @@ function addBox(
 function lamp(group: THREE.Group, x: number, z: number): void {
   const pole = new THREE.Mesh(
     new THREE.CylinderGeometry(0.06, 0.08, 3.6, 8),
-    new THREE.MeshStandardMaterial({ color: 0x2a2a26, roughness: 0.7 }),
+    new THREE.MeshStandardMaterial({ color: 0x2a2c26, roughness: 0.7 }),
   );
   pole.position.set(x, 1.8, z);
   group.add(pole);
@@ -134,18 +146,48 @@ function lamp(group: THREE.Group, x: number, z: number): void {
   const head = new THREE.Mesh(
     new THREE.BoxGeometry(0.45, 0.12, 0.45),
     new THREE.MeshStandardMaterial({
-      color: palette.amber,
-      emissive: palette.amber,
-      emissiveIntensity: 1.4,
-      roughness: 0.4,
+      color: palette.ivory,
+      emissive: palette.ivory,
+      emissiveIntensity: 0.85,
+      roughness: 0.35,
     }),
   );
   head.position.set(x, 3.62, z);
   group.add(head);
 
-  const light = new THREE.PointLight(palette.amber, 8, 14, 2);
+  const light = new THREE.PointLight(0xf5f0d8, 14, 16, 1.6);
   light.position.set(x, 3.5, z);
   group.add(light);
+}
+
+function addBillboards(group: THREE.Group): void {
+  const spots: Array<[number, number, number, number]> = [
+    [-14.8, 3.4, -6.2, Math.PI / 2],
+    [-14.8, 3.4, 0, Math.PI / 2],
+    [-14.8, 3.4, 6.2, Math.PI / 2],
+    [14.8, 3.4, -6.2, -Math.PI / 2],
+    [14.8, 3.4, 0, -Math.PI / 2],
+    [14.8, 3.4, 6.2, -Math.PI / 2],
+    [-3.2, 4.8, -11.4, 0],
+    [3.2, 4.8, -11.4, 0],
+    [-3.2, 4.8, 11.4, Math.PI],
+    [3.2, 4.8, 11.4, Math.PI],
+  ];
+  spots.forEach(([x, y, z, rot], i) => {
+    const name = SPONSORS[i % SPONSORS.length];
+    const board = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.4, 1.45),
+      new THREE.MeshStandardMaterial({
+        map: billboardTexture(name),
+        roughness: 0.45,
+        emissive: new THREE.Color(0x1a1c17),
+        emissiveIntensity: 0.35,
+      }),
+    );
+    board.position.set(x, y, z);
+    board.rotation.y = rot;
+    group.add(board);
+  });
 }
 
 function buildStorefront(
@@ -158,19 +200,19 @@ function buildStorefront(
   const { x, z, facing, name, subtitle, id } = def;
   const navy = new THREE.MeshStandardMaterial({
     color: palette.navy,
-    roughness: 0.82,
-    metalness: 0.08,
+    roughness: 0.72,
+    metalness: 0.06,
   });
   const slate = new THREE.MeshStandardMaterial({
     color: palette.slate,
-    roughness: 0.78,
+    roughness: 0.7,
   });
   const windows = new THREE.MeshStandardMaterial({
     map: facade,
-    roughness: 0.55,
-    metalness: 0.05,
-    emissive: new THREE.Color(0x22180a),
-    emissiveIntensity: 0.35,
+    roughness: 0.45,
+    metalness: 0.04,
+    emissive: new THREE.Color(0x2a2e18),
+    emissiveIntensity: 0.28,
   });
 
   addBox(
@@ -192,7 +234,7 @@ function buildStorefront(
   face.rotation.y = facing > 0 ? 0 : Math.PI;
   group.add(face);
 
-  const plinth = addBox(
+  addBox(
     group,
     colliders,
     new THREE.BoxGeometry(BUILDING_W + 0.3, 0.35, BUILDING_D + 0.3),
@@ -202,7 +244,6 @@ function buildStorefront(
     z,
     false,
   );
-  void plinth;
 
   const doorW = 1.7;
   const doorH = 2.5;
@@ -210,9 +251,9 @@ function buildStorefront(
   const door = new THREE.Mesh(
     new THREE.BoxGeometry(doorW, doorH, 0.12),
     new THREE.MeshStandardMaterial({
-      color: 0x0a0a08,
-      emissive: palette.amber,
-      emissiveIntensity: 0.18,
+      color: 0x11100e,
+      emissive: palette.lime,
+      emissiveIntensity: 0.22,
       roughness: 0.4,
     }),
   );
@@ -223,9 +264,9 @@ function buildStorefront(
   const frame = new THREE.Mesh(
     new THREE.BoxGeometry(doorW + 0.16, doorH + 0.16, 0.06),
     new THREE.MeshStandardMaterial({
-      color: palette.amber,
-      emissive: palette.amber,
-      emissiveIntensity: 0.6,
+      color: palette.lime,
+      emissive: palette.lime,
+      emissiveIntensity: 0.45,
     }),
   );
   frame.position.set(x, doorH / 2, doorZ - facing * 0.05);
@@ -235,9 +276,9 @@ function buildStorefront(
     new THREE.PlaneGeometry(6.4, 1.5),
     new THREE.MeshStandardMaterial({
       map: signTexture(name, subtitle),
-      roughness: 0.45,
-      emissive: palette.amber,
-      emissiveIntensity: 0.22,
+      roughness: 0.4,
+      emissive: new THREE.Color(0x222418),
+      emissiveIntensity: 0.4,
     }),
   );
   sign.position.set(x, 5.35, faceZ + facing * 0.02);
@@ -247,7 +288,7 @@ function buildStorefront(
 
   const awning = new THREE.Mesh(
     new THREE.BoxGeometry(7.2, 0.08, 1.3),
-    new THREE.MeshStandardMaterial({ color: palette.cream, roughness: 0.7 }),
+    new THREE.MeshStandardMaterial({ color: 0xd8d6cc, roughness: 0.65 }),
   );
   awning.position.set(x, 3.15, z + facing * (BUILDING_D / 2 + 0.55));
   group.add(awning);
@@ -270,7 +311,7 @@ export function buildDistrict(): District {
     new THREE.PlaneGeometry(36, 28),
     new THREE.MeshStandardMaterial({
       color: palette.asphalt,
-      roughness: 0.95,
+      roughness: 0.92,
     }),
   );
   asphalt.rotation.x = -Math.PI / 2;
@@ -279,7 +320,7 @@ export function buildDistrict(): District {
 
   const sidewalkMat = new THREE.MeshStandardMaterial({
     color: palette.sidewalk,
-    roughness: 0.9,
+    roughness: 0.86,
   });
   const northWalk = new THREE.Mesh(
     new THREE.BoxGeometry(32, 0.08, 3.2),
@@ -292,9 +333,9 @@ export function buildDistrict(): District {
   group.add(southWalk);
 
   const lineMat = new THREE.MeshStandardMaterial({
-    color: palette.amber,
-    emissive: palette.amber,
-    emissiveIntensity: 0.35,
+    color: palette.ivory,
+    emissive: palette.ivory,
+    emissiveIntensity: 0.18,
   });
   for (let i = -6; i <= 6; i++) {
     if (i === 0) continue;
@@ -306,7 +347,7 @@ export function buildDistrict(): District {
   for (let i = -4; i <= 4; i++) {
     const stripe = new THREE.Mesh(
       new THREE.BoxGeometry(0.28, 0.025, 5.6),
-      new THREE.MeshStandardMaterial({ color: palette.cream, roughness: 0.8 }),
+      new THREE.MeshStandardMaterial({ color: 0xe8e6dc, roughness: 0.75 }),
     );
     stripe.position.set(i * 0.55, 0.03, 0);
     group.add(stripe);
@@ -314,7 +355,7 @@ export function buildDistrict(): District {
 
   const plaque = new THREE.Mesh(
     new THREE.BoxGeometry(3.6, 0.7, 0.7),
-    new THREE.MeshStandardMaterial({ color: palette.navy, roughness: 0.5 }),
+    new THREE.MeshStandardMaterial({ color: palette.charcoal, roughness: 0.45 }),
   );
   plaque.position.set(0, 0.4, 0);
   group.add(plaque);
@@ -336,11 +377,12 @@ export function buildDistrict(): District {
   }
 
   const endMat = new THREE.MeshStandardMaterial({
-    color: 0x0e141c,
-    roughness: 0.86,
+    color: 0x161812,
+    roughness: 0.8,
   });
   addBox(group, colliders, new THREE.BoxGeometry(2.4, 8, 22), endMat, -16.2, 4, 0);
   addBox(group, colliders, new THREE.BoxGeometry(2.4, 8, 22), endMat, 16.2, 4, 0);
+  addBillboards(group);
 
   lamp(group, -10.5, -3.6);
   lamp(group, 10.5, -3.6);
@@ -348,11 +390,11 @@ export function buildDistrict(): District {
   lamp(group, 10.5, 3.6);
 
   const planterMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2418,
+    color: 0x2a2c22,
     roughness: 0.8,
   });
   const hedgeMat = new THREE.MeshStandardMaterial({
-    color: 0x3a4a32,
+    color: 0x4a5a32,
     roughness: 1,
   });
   for (const [x, z] of [
@@ -367,10 +409,10 @@ export function buildDistrict(): District {
     group.add(hedge);
   }
 
-  const hemi = new THREE.HemisphereLight(0x3a3224, 0x080806, 0.7);
+  const hemi = new THREE.HemisphereLight(0xe8e4d4, 0x2a2c22, 1.15);
   group.add(hemi);
-  const key = new THREE.DirectionalLight(0xffe2a8, 1.05);
-  key.position.set(8, 16, 6);
+  const key = new THREE.DirectionalLight(0xfff4dc, 1.7);
+  key.position.set(8, 18, 7);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
   key.shadow.camera.left = -20;
@@ -378,6 +420,11 @@ export function buildDistrict(): District {
   key.shadow.camera.top = 16;
   key.shadow.camera.bottom = -16;
   group.add(key);
+  const fill = new THREE.DirectionalLight(0xd0ea66, 0.28);
+  fill.position.set(-10, 8, -6);
+  group.add(fill);
+  const ambient = new THREE.AmbientLight(0x6a6858, 0.35);
+  group.add(ambient);
 
   return {
     group,
