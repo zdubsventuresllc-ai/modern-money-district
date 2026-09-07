@@ -10,10 +10,10 @@ export interface BeatController {
   readonly active: BeatKind | null;
 }
 
-interface StableState {
-  minutes: number;
-  bankTried: boolean;
-  usdcOk: boolean;
+interface PegState {
+  price: number;
+  held: number;
+  shockT: number;
 }
 
 interface RailsState {
@@ -22,34 +22,6 @@ interface RailsState {
 
 interface PolicyState {
   phase: "idle" | "simulated" | "no-undo" | "cleared";
-}
-
-const DAYS = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"] as const;
-
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-function clockLabel(minutes: number): { day: string; time: string; weekend: boolean } {
-  const dayIndex = Math.floor(minutes / (24 * 60)) % 7;
-  const tod = minutes % (24 * 60);
-  const h24 = Math.floor(tod / 60);
-  const m = tod % 60;
-  const ampm = h24 >= 12 ? "PM" : "AM";
-  const h12 = h24 % 12 || 12;
-  const weekend = dayIndex <= 1;
-  return {
-    day: DAYS[dayIndex],
-    time: `${h12}:${pad(m)} ${ampm} ET`,
-    weekend,
-  };
-}
-
-function bankOpen(minutes: number): boolean {
-  const { weekend } = clockLabel(minutes);
-  if (weekend) return false;
-  const tod = minutes % (24 * 60);
-  return tod >= 9 * 60 && tod < 17 * 60;
 }
 
 export function createBeats(root: {
@@ -61,7 +33,7 @@ export function createBeats(root: {
   onComplete: (id: BeatKind) => void;
 }): BeatController {
   let active: BeatKind | null = null;
-  let stable: StableState = { minutes: 2 * 60 + 14, bankTried: false, usdcOk: false };
+  let peg: PegState = { price: 1, held: 0, shockT: 0 };
   let rails: RailsState = { seen: new Set() };
   let policy: PolicyState = { phase: "idle" };
   let unbind: (() => void) | null = null;
@@ -81,21 +53,23 @@ export function createBeats(root: {
     }, 700);
   }
 
-  function renderStable(): void {
-    const open = bankOpen(stable.minutes);
-    const { day, time } = clockLabel(stable.minutes);
+  function pegBand(): "held" | "soft" | "break" {
+    if (peg.price >= 0.99 && peg.price <= 1.01) return "held";
+    if (peg.price < 0.96) return "break";
+    return "soft";
+  }
+
+  function renderPeg(): void {
+    const band = pegBand();
     root.stage.innerHTML = `
-      <div class="beat-clock" data-act="skip-hours">
-        <span class="beat-clock-day">${day}</span>
-        <span class="beat-clock-time">${time}</span>
-        <span class="beat-clock-win ${open ? "is-open" : "is-closed"}">${
-          open ? "Bank window open" : "Bank window closed"
-        }</span>
-        <span class="beat-clock-hint">Tap the clock to skip hours</span>
+      <p class="beat-prompt">Redemptions hit. Keep one dollar.</p>
+      <div class="peg-meter is-${band}">
+        <span class="peg-label">USDC</span>
+        <span class="peg-price">$${peg.price.toFixed(3)}</span>
+        <span class="peg-target">Target $1.000 · ${peg.held}/3 waves held</span>
       </div>
       <div class="beat-actions">
-        <button type="button" class="btn" data-act="bank">Bank wire</button>
-        <button type="button" class="btn primary" data-act="usdc">USDC rail</button>
+        <button type="button" class="btn primary" data-act="defend">Defend with reserves</button>
       </div>
     `;
   }
@@ -145,35 +119,29 @@ export function createBeats(root: {
     `;
   }
 
+  function resetPeg(message: string): void {
+    peg = { price: 1, held: 0, shockT: 0 };
+    root.status.textContent = message;
+    renderPeg();
+  }
+
   function onStageClick(event: Event): void {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
     const act = target.closest<HTMLElement>("[data-act]")?.dataset.act;
     if (!act || !active) return;
 
-    if (active === "stablecoin-shop") {
-      if (act === "skip-hours") {
-        stable.minutes += 3 * 60;
-        renderStable();
-        return;
+    if (active === "stablecoin-shop" && act === "defend") {
+      peg.price = Math.min(1.004, peg.price + 0.038);
+      if (pegBand() === "held") {
+        peg.held += 1;
+        root.status.textContent = `Peg held. ${peg.held}/3 redemption waves.`;
+      } else {
+        root.status.textContent = "Still soft. Hit reserves again.";
       }
-      if (act === "bank") {
-        stable.bankTried = true;
-        if (bankOpen(stable.minutes)) {
-          root.status.textContent = "Queued. T+1. Bank desk is awake — the rail still waits.";
-        } else {
-          root.status.textContent = "Bank closed. The dollar is awake. The wire is not.";
-        }
-        maybeComplete(active, stable.bankTried && stable.usdcOk);
-        return;
-      }
-      if (act === "usdc") {
-        stable.usdcOk = true;
-        root.status.textContent = "Settled. T+0. The rail that does not sleep.";
-        renderStable();
-        maybeComplete(active, stable.bankTried && stable.usdcOk);
-        return;
-      }
+      renderPeg();
+      maybeComplete(active, peg.held >= 3);
+      return;
     }
 
     if (active === "rails-station") {
@@ -225,8 +193,8 @@ export function createBeats(root: {
     paintChrome(id);
     root.status.textContent = "Do the move. The cite is the punchline.";
     if (id === "stablecoin-shop") {
-      stable = { minutes: 2 * 60 + 14, bankTried: false, usdcOk: false };
-      renderStable();
+      peg = { price: 1, held: 0, shockT: 1.6 };
+      renderPeg();
     } else if (id === "rails-station") {
       rails = { seen: new Set() };
       renderRails();
@@ -240,18 +208,28 @@ export function createBeats(root: {
 
   function update(dt: number): void {
     if (active !== "stablecoin-shop") return;
-    stable.minutes += dt * 18;
-    const clock = root.stage.querySelector(".beat-clock-time");
-    const day = root.stage.querySelector(".beat-clock-day");
-    const win = root.stage.querySelector(".beat-clock-win");
-    if (!clock || !day || !win) return;
-    const label = clockLabel(stable.minutes);
-    const open = bankOpen(stable.minutes);
-    day.textContent = label.day;
-    clock.textContent = label.time;
-    win.textContent = open ? "Bank window open" : "Bank window closed";
-    win.classList.toggle("is-open", open);
-    win.classList.toggle("is-closed", !open);
+    peg.price -= dt * 0.012;
+    peg.shockT += dt;
+    if (peg.shockT >= 3.4) {
+      peg.shockT = 0;
+      peg.price -= 0.028;
+      root.status.textContent = "Redemption wave. The peg slipped.";
+    }
+    if (peg.price < 0.93) {
+      resetPeg("Depeg. No reserves, no dollar. Try again.");
+      return;
+    }
+    const price = root.stage.querySelector(".peg-price");
+    const meter = root.stage.querySelector(".peg-meter");
+    const target = root.stage.querySelector(".peg-target");
+    if (price) price.textContent = `$${peg.price.toFixed(3)}`;
+    if (target) {
+      target.textContent = `Target $1.000 · ${peg.held}/3 waves held`;
+    }
+    if (meter) {
+      meter.classList.remove("is-held", "is-soft", "is-break");
+      meter.classList.add(`is-${pegBand()}`);
+    }
   }
 
   function stop(): void {

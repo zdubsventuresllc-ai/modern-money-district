@@ -583,6 +583,45 @@ kbd {
   letter-spacing: -0.03em;
 }
 
+.peg-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 20px;
+  padding: 8px 0 4px;
+}
+
+.peg-label {
+  color: var(--smoke);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.peg-price {
+  font-family: var(--serif);
+  font-size: clamp(2.8rem, 12vw, 4.4rem);
+  line-height: 0.95;
+  color: var(--ivory);
+}
+
+.peg-meter.is-held .peg-price {
+  color: var(--lime);
+}
+
+.peg-meter.is-soft .peg-price {
+  color: var(--ivory);
+}
+
+.peg-meter.is-break .peg-price {
+  color: #e7b0a0;
+}
+
+.peg-target {
+  color: var(--gray);
+  font-size: 13px;
+}
+
 .beat-clock {
   display: flex;
   flex-direction: column;

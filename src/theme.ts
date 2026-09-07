@@ -43,7 +43,7 @@ export const STOREFRONTS: StorefrontDef[] = [
   {
     id: "stablecoin-shop",
     name: "Stablecoin Shop",
-    subtitle: "24/7 dollar rails",
+    subtitle: "Hold the peg",
     x: -6.2,
     z: -8.4,
     facing: 1,
@@ -75,7 +75,7 @@ export const STOREFRONTS: StorefrontDef[] = [
 ];
 
 export const LESSONS: Record<StorefrontDef["id"], string> = {
-  "stablecoin-shop": "Bank wires sleep. Dollar rails do not.",
+  "stablecoin-shop": "A stablecoin is a peg you keep — or a depeg you feel.",
   "rails-station": "ACH waits. Cards tax. USDC clears T+0.",
   "policy-desk": "On-chain has no recall desk. Simulate first.",
   "agent-pay-arcade": "Settlement is a corridor. Pick the rail that clears.",

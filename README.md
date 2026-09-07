@@ -12,7 +12,7 @@ Claims in `public/claims.json` stay denser (~31 rows, 4 `verified: true`). `veri
 
 1. Title sheet (Stabledash Live energy) → ~8s first-run hook on the street.
 2. Four doors. Each **teaches by doing**, then unlocks one attributed claim:
-   - **Stablecoin Shop** — Saturday 2am wire vs 24/7 USDC rail.
+   - **Stablecoin Shop** — peg-keep: defend $1.00 through redemption waves.
    - **Rails Station** — pick/compare ACH vs cards vs USDC.
    - **Policy Desk** — send without a sim (no undo) vs simulate first.
    - **Agent Pay Arcade** — Settlement Run corridor. First 8 seconds are the trailer moment (lane names, depeg / compliance, USDC clear). Full run still playable. Ghost in `localStorage`.
