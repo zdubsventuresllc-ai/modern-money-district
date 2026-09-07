@@ -400,7 +400,11 @@ canvas.addEventListener("pointerdown", (e) => {
   dragMoved = false;
   dragX = e.clientX;
   dragY = e.clientY;
-  canvas.setPointerCapture(e.pointerId);
+  try {
+    canvas.setPointerCapture(e.pointerId);
+  } catch {
+    /* pointer already released */
+  }
 });
 
 canvas.addEventListener("pointermove", (e) => {
@@ -533,7 +537,11 @@ window.addEventListener("pointerdown", (e) => {
   if (mode !== "street") return;
   if (isCoarse() && e.target instanceof Node && stick.contains(e.target)) {
     stickTouch = e.pointerId;
-    stick.setPointerCapture(e.pointerId);
+    try {
+      stick.setPointerCapture(e.pointerId);
+    } catch {
+      /* pointer already released */
+    }
     stickFromEvent(e);
   }
 });

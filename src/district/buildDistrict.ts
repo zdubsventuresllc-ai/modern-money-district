@@ -434,9 +434,9 @@ export function buildDistrict(): District {
     group.add(hedge);
   }
 
-  const hemi = new THREE.HemisphereLight(0xf5f5f7, 0x11100e, 0.26);
+  const hemi = new THREE.HemisphereLight(0xf5f5f7, 0x11100e, 0.3);
   group.add(hemi);
-  const key = new THREE.DirectionalLight(0xf3efe6, 0.88);
+  const key = new THREE.DirectionalLight(0xf3efe6, 0.98);
   key.position.set(5, 15, 9);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
@@ -448,14 +448,14 @@ export function buildDistrict(): District {
   const fill = new THREE.DirectionalLight(0x1a1c17, 0.22);
   fill.position.set(-10, 6, -6);
   group.add(fill);
-  const ambient = new THREE.AmbientLight(0x11100e, 0.18);
+  const ambient = new THREE.AmbientLight(0x11100e, 0.22);
   group.add(ambient);
 
   return {
     group,
     colliders,
     doors,
-    spawn: new THREE.Vector3(0, 1.65, 2.4),
+    spawn: new THREE.Vector3(0, 1.7, -1.2),
     spawnYaw: Math.PI,
   };
 }
