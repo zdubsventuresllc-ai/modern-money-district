@@ -76,7 +76,7 @@ function signTexture(title: string, subtitle: string, lit: boolean): THREE.Canva
     ctx.font = "400 70px 'Instrument Serif', Georgia, serif";
     ctx.fillText(title, 48, 118);
     ctx.fillStyle = lit ? "#d0ea66" : "#a7a5a0";
-    ctx.font = "500 32px Outfit, sans-serif";
+    ctx.font = "500 32px Aspekta, Outfit, sans-serif";
     ctx.fillText(subtitle.toUpperCase(), 48, 186);
   });
 }
@@ -89,7 +89,7 @@ function plaqueTexture(): THREE.CanvasTexture {
     ctx.font = "400 52px 'Instrument Serif', Georgia, serif";
     ctx.fillText("Modern Money District", 48, 110);
     ctx.fillStyle = "#a7a5a0";
-    ctx.font = "400 26px Outfit, sans-serif";
+    ctx.font = "400 26px Aspekta, Outfit, sans-serif";
     ctx.fillText("LIVE NIGHT  ·  FOUR DOORS  ·  ONE BLOCK", 48, 168);
   });
 }
@@ -104,7 +104,7 @@ function billboardTexture(name: string): THREE.CanvasTexture {
     ctx.font = "400 72px 'Instrument Serif', Georgia, serif";
     ctx.fillText(name, 48, 150);
     ctx.fillStyle = "#8b8b9e";
-    ctx.font = "500 22px Outfit, sans-serif";
+    ctx.font = "500 22px Aspekta, Outfit, sans-serif";
     ctx.fillText("LIVE NIGHT PARTNER", 48, 200);
   });
 }
@@ -316,6 +316,21 @@ function buildStorefront(
   awning.position.set(x, 3.15, z + facing * (BUILDING_D / 2 + 0.55));
   group.add(awning);
 
+  const practical = new THREE.Mesh(
+    new THREE.BoxGeometry(1.8, 0.05, 0.08),
+    new THREE.MeshStandardMaterial({
+      color: palette.lime,
+      emissive: palette.lime,
+      emissiveIntensity: 0.55,
+      roughness: 0.35,
+    }),
+  );
+  practical.position.set(x, 3.22, z + facing * (BUILDING_D / 2 + 0.72));
+  group.add(practical);
+  const practicalLight = new THREE.PointLight(0xd0ea66, 1.15, 4.2, 2);
+  practicalLight.position.set(x, 3.4, z + facing * (BUILDING_D / 2 + 0.55));
+  group.add(practicalLight);
+
   doors.push({
     id,
     position: new THREE.Vector3(x, 1.65, doorZ + facing * 1.7),
@@ -402,7 +417,7 @@ export function buildDistrict(): District {
   }
 
   const endMat = new THREE.MeshStandardMaterial({
-    color: 0x161812,
+    color: palette.midnight,
     roughness: 0.8,
   });
   addBox(group, colliders, new THREE.BoxGeometry(2.4, 8, 22), endMat, -16.2, 4, 0);
@@ -415,7 +430,7 @@ export function buildDistrict(): District {
   lamp(group, 10.5, 3.6);
 
   const planterMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2c22,
+    color: palette.charcoal,
     roughness: 0.8,
   });
   const hedgeMat = new THREE.MeshStandardMaterial({

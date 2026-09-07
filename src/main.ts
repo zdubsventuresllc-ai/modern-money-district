@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { createBeats, type BeatKind } from "./beats/beats";
-import { claimsFor, loadClaims, primaryClaim } from "./claims";
+import { claimsFor, loadClaims } from "./claims";
 import { buildDistrict, nearestDoor, type Door } from "./district/buildDistrict";
 import { Walker } from "./player/walker";
 import { SettlementRun, bestGhostTime } from "./arcade/settlementRun";
@@ -48,7 +48,6 @@ const claimPlay = $<HTMLButtonElement>("claim-play");
 const arcadeHud = $("arcade-hud");
 const arcadeClock = $("arcade-clock");
 const arcadeGhost = $("arcade-ghost");
-const arcadeClaim = $("arcade-claim");
 const arcadeCoach = $("arcade-coach");
 const arcadeLanes = $("arcade-lanes");
 const arcadeExit = $<HTMLButtonElement>("arcade-exit");
@@ -84,7 +83,7 @@ renderer.toneMappingExposure = 1.12;
 
 const streetScene = new THREE.Scene();
 streetScene.background = new THREE.Color(palette.midnight);
-streetScene.fog = new THREE.FogExp2(0x2a2c28, 0.02);
+streetScene.fog = new THREE.FogExp2(0x1a1c17, 0.018);
 
 const camera = new THREE.PerspectiveCamera(
   68,
@@ -291,10 +290,6 @@ function startArcade(): void {
   arcade = new SettlementRun();
   arcade.camera.aspect = window.innerWidth / window.innerHeight;
   arcade.camera.updateProjectionMatrix();
-  const claim = claims ? primaryClaim(claims, "agent-pay-arcade") : undefined;
-  arcadeClaim.textContent = claim
-    ? `${claim.guest} · ${claim.episode}`
-    : "Clear T+0. Ghost lives on this phone.";
   const best = bestGhostTime();
   arcadeGhost.textContent = best ? `Ghost ${formatClock(best)}` : "Ghost —";
   setMode("arcade");

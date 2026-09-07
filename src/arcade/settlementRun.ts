@@ -49,11 +49,11 @@ function labelTexture(text: string, danger: boolean): THREE.CanvasTexture {
   if (!ctx) throw new Error("2d context unavailable");
   ctx.fillStyle = "#11100e";
   ctx.fillRect(0, 0, 512, 128);
-  ctx.strokeStyle = danger ? "#c45a3a" : "#d0ea66";
+  ctx.strokeStyle = danger ? "#8b8b9e" : "#d0ea66";
   ctx.lineWidth = 8;
   ctx.strokeRect(10, 10, 492, 108);
-  ctx.fillStyle = danger ? "#c45a3a" : "#d0ea66";
-  ctx.font = "600 42px Outfit, sans-serif";
+  ctx.fillStyle = danger ? "#8b8b9e" : "#d0ea66";
+  ctx.font = "600 42px Aspekta, Outfit, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(text, 256, 80);
   const tex = new THREE.CanvasTexture(canvas);
@@ -113,7 +113,7 @@ export class SettlementRun {
 
     const trough = new THREE.Mesh(
       new THREE.BoxGeometry(9.2, 0.2, TRACK_LEN + 20),
-      new THREE.MeshStandardMaterial({ color: 0x24261f, roughness: 0.88 }),
+      new THREE.MeshStandardMaterial({ color: palette.charcoal, roughness: 0.88 }),
     );
     trough.position.set(0, -0.2, TRACK_LEN / 2);
     this.scene.add(trough);
@@ -143,7 +143,7 @@ export class SettlementRun {
     });
 
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x161812,
+      color: palette.midnight,
       roughness: 0.8,
     });
     for (const x of [-4.8, 4.8]) {
@@ -212,8 +212,8 @@ export class SettlementRun {
     this.ghost = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.7, 1.1),
       new THREE.MeshStandardMaterial({
-        color: palette.cream,
-        emissive: palette.cream,
+        color: palette.ivory,
+        emissive: palette.ivory,
         emissiveIntensity: 0.35,
         transparent: true,
         opacity: 0.35,

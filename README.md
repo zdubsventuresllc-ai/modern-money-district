@@ -2,7 +2,7 @@
 
 Stabledash Live lab spike: a **walkable Three.js city block** and an **Agent Pay Arcade** settlement run. You feel how modern money moves in under a minute, taught by real Live guests — not a quote museum.
 
-Brand is the site: midnight / ivory / lime, serif titles, clean sans UI. Full-bleed cinematic street. No amber terminal. No narrow arcade frame.
+Brand is the Stabledash Live freeze-frame: midnight `#11100e` / charcoal `#1a1c17` / ivory `#f5f5f7` / gray `#a7a5a0` / smoke `#8b8b9e` / lime `#d0ea66`. Instrument Serif display + Aspekta (Outfit fallback) UI. Full-bleed cinematic street — not amber terminal, not a quote museum.
 
 Claims in `public/claims.json` stay denser (~31 rows, 4 `verified: true`). `verified: true` only for Whisper / Ovitz tape. Never invented. Dual keys (`storefront` / `storefrontId`, etc.) still load.
 
@@ -15,14 +15,14 @@ Claims in `public/claims.json` stay denser (~31 rows, 4 `verified: true`). `veri
    - **Stablecoin Shop** — peg-keep: defend $1.00 through redemption waves.
    - **Rails Station** — pick/compare ACH vs cards vs USDC.
    - **Policy Desk** — send without a sim (no undo) vs simulate first.
-   - **Agent Pay Arcade** — Settlement Run corridor. First 8 seconds are the trailer moment (lane names, depeg / compliance, USDC clear). Full run still playable. Ghost in `localStorage`.
+   - **Agent Pay Arcade** — Settlement Run starts immediately. First 8 seconds are the trailer (lane names, depeg / compliance, USDC clear). **No guest claim until you settle.** Ghost in `localStorage`.
 3. Punchline is **Guest said…** + episode cite. Verified-tape badge only when `verified: true`. Optional YouTube **link-out**, no embeds.
 
 New Live night → new claims in the same block. The street does not change.
 
 ## What changed in this pass
 
-- Design Expert canon: charcoal storefront mass, midnight roofs, gray trim, ivory glass ~10%, one lime sign practical per door. Ivory-tinted key, charcoal fill, midnight ambient 0.18, cool smoke haze. Sparse one-card HUD. No lime wash, no amber, no terminal type.
+- Design Expert canon: charcoal storefront mass, midnight roofs, gray trim, ivory glass ~10%, one lime practical per door (thin fixture + sign-on). Ivory-tinted key, charcoal fill, midnight ambient 0.22, cool charcoal haze. Splash matches the Live site (12PM ET, site lede, 250+ / 10M+ / 10,000+). Sparse one-card HUD. No lime wash, no amber, no second palette.
 - First-run onboard (~8s). Skip + reduced-motion skip. Remembered in `localStorage` (`mmd-onboard-v1`).
 - Teach-then-reward storefronts. Claim panels no longer open cold.
 - Arcade trailer polish + punchline on the result sheet (copy time to share).
