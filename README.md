@@ -1,22 +1,38 @@
-# Modern Money District
+# Late Friday · Modern Money District
 
-Stabledash Live lab spike: a **walkable Three.js city block** and an **Agent Pay Arcade** settlement run. You feel how modern money moves in under a minute, taught by real Live guests, not a quote museum.
+Stabledash Live's arcade. **Late Friday** is the main game: a Frogger-style cabinet where you are $1,000 trying to reach a vendor in Singapore at 4:55 PM on a Friday, and every lane is a payment rail. The earlier walkable 3D block still lives at `/district.html`.
 
 **Play:** https://web-production-6efce.up.railway.app/ (hard-refresh after a deploy)
 
-## What changed in this pass (2026-09-07, brand + nostalgia pass)
+## What changed in this pass (2026-09-08, the 8-bit pivot)
 
-The block now pulls from the actual Stabledash Live kit instead of approximating it.
+Zach's read on the 3D block: the mouse got stuck (pointer lock) and the world asked a lot before it paid anything back. So the front door is now an 80s cabinet, no 3D, no pointer lock, 22 KB of JavaScript.
 
-- **The real pre-roll is the splash.** `public/media/live-intro.mp4` is the show's own intro (the archival B&W montage: subway, control room, NYSE bell, cash counters) compressed to 960p / 1.9 MB, muted, graded darker behind the title. It also plays on every TV in the block through one shared `VideoTexture`.
-- **The real ident is the door sting.** Entering any door plays one second of the MoveMe "You're watching Stabledash LIVE" transition (`public/media/moveme.mp4`, 200 KB). Tap to skip. Skipped under `prefers-reduced-motion`.
-- **Real logo, real UI font.** `public/brand/live-logo.png` (white wordmark + chartreuse LIVE) on the splash and street HUD. Aspekta 350/400/450/500 ship from `public/fonts/` (open license). The site's display serifs (Elgraine, FK Roman Standard) are served without CORS headers from stabledash.com and are commercial, so they are not hotlinked or copied into this public repo; Instrument Serif stands in per the brand doc's free-fallback rule.
-- **Studio lower-third grammar everywhere.** Onboard lines, beat panels, claim cards and the arcade result all use the Live banner form: pulsing dot + uppercase kicker, ALL-CAPS headline (≤36 effective), one line of text, then a `LIVE with [Guest], [Role] of [Company]` name card.
-- **70s/80s/90s New York on the street.** Theater marquees with chasing bulbs over every door, a 3x3 bank of CRT monitors in a shop window playing the pre-roll (two on static), a newsstand and pasted broadsheet posters that carry the real guest quotes, a running news ticker across both rows in the on-air ticker's category grammar, a subway entrance with chartreuse globe lamps for Rails Station, a payphone, hydrants, newspaper boxes, a parked town car, a lit skyline ring, wet asphalt under ivory lamps, film grain over the whole frame.
-- **Teach-before-you-enter windows.** Each ground-floor window is a board: the Stablecoin Shop price board (`$1.000 · PEG HELD`), the Rails departure board (ACH Mon 9:00 · Cards now 2.9% · USDC now T+0), the Policy Desk rules, the Arcade's "3 RAILS · 1 SETTLEMENT".
-- **Arcade teaches with a tally.** Every hit flashes what it cost (card hold skims 2.9%, ACH lands next business day, depeg, compliance pause) and the result card totals clears, holds and card fees on a $1,000 send.
-- **Onboard runs on the wall clock** (it used to stall when the tab throttled frames). Fonts are awaited before any canvas sign is drawn, so marquees and posters render in Aspekta, not a fallback.
-- Claims: still 31 rows, 4 `verified: true`. Nothing invented. Posters and the ticker read from `public/claims.json` at runtime; unverified rows carry "positioning, confirm on air".
+- **Late Friday** (`index.html`, `src/game/`). 13x15 pixel grid on a 2D canvas, Press Start 2P for game text, Aspekta for the chrome, brand tokens only. Arrows / WASD, swipe, tap the board, or the on-screen pad. Never captures the pointer.
+- **The board is the payment stack.** Bottom to top: PAYER · NYC → two card lanes (taxis marked DECLINE; stepping in costs 2.9% interchange) → KYC desk → the ACH river (four rows of BATCH barges that only move during bank hours) with the **lime USDC express bridge** on the right (open 24/7, T+0, a drifting `.97` depeg puddle rides it) → FX desk → SWIFT lane (CORR vans bounce you back to the FX desk and take $25) → CHECK ADDR row (`0x?` manholes: step on one and the payment is gone, no undo) → KYC gate (opens and closes) → VENDOR · SG → five storefronts to pay.
+- **The clock is the joke.** Starts FRI 4:55 PM, one game minute per real second. At 5:00 PM the barges freeze ("ACH BATCH WINDOW CLOSED"). Stand on a frozen barge and the clock fast-forwards through the weekend until MON 9:00 AM. The bridge never closes.
+- **Score = amount arrived + time bonus + level bonus.** Waiting the weekend wipes the bonus. Three lives, hi-score table with initials in `localStorage`.
+- **Each level clear pays a guest line** from `claims.json` in the Studio lower-third grammar (level 1 rails, 2 stablecoin, 3 policy, 4 agents, then cycles; verified rows first, unverified badged as positioning).
+- **The settlement receipt is the share unit.** Game over prints a paper receipt: payments settled, amount arrived, card interchange, correspondent fees, depeg slippage, time waiting on ACH, payments lost, score, and one line that tells you what the run taught you. Share uses the Web Share API where available, otherwise copies text; the on-screen CTA is "screenshot and tag @stabledash".
+- **Sound** is an 8-bit WebAudio synth (hop, fee, bounce, death, settle, level jingle), off by default, one tap to enable.
+- The real Live pre-roll plays muted behind the attract screen. Film grain stays.
+- Vite is now multi-page: `index.html` (arcade) + `district.html` (the 3D block, unchanged from the 2026-09-07 pass, still deep-linkable with `?door=`).
+
+### Phone play (Late Friday)
+
+1. Open the URL. Add to Home Screen if you want it full-bleed.
+2. Tap **PRESS START**. Tap the pad, swipe, or tap the board on the side you want to hop.
+3. Get across the card lanes between taxis (each lane costs 2.9%). Cross the river on ACH barges while banks are open, or take the lime bridge on the right any time. Dodge the `.97` puddle.
+4. Get past the SWIFT vans, read the address row, wait for the gate, and step into a storefront. Five storefronts clear the level.
+5. Read the guest line. Play on. When you're out of lives, screenshot the receipt.
+
+### Design notes
+
+- Rails are choices, not layers: the bridge exists so "the stablecoin rail never closes" is something you *do*, not something you read.
+- Death copy is the payments world's own language: DECLINED · DO NOT HONOR, ACH RETURN · R01, SENT TO 0x000…DEAD · NO UNDO, CORRESPONDENT BANK -$25.
+- No scanline or CRT shader. Pixel grid, brand palette, film grain, ivory paper receipt.
+
+## The 3D block (`/district.html`)
 
 ## Experience lock (product canon)
 
