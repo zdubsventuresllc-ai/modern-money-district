@@ -1,0 +1,23 @@
+{
+  "name": "modern-money-district",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Walkable Stabledash city block + Agent Pay Arcade (lab spike)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.170.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}
