@@ -1,0 +1,9 @@
+{
+  "name": "mmd-verify-helpers",
+  "private": true,
+  "type": "module",
+  "description": "Verification scaffolding only. Not a product dependency. Playwright talks to system Chrome over CDP.",
+  "dependencies": {
+    "playwright": "^1.55.0"
+  }
+}

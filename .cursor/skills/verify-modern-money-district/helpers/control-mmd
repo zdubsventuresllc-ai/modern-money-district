@@ -1,0 +1,728 @@
+#!/usr/bin/env node
+/**
+ * control-mmd — verification harness for Modern Money District.
+ * Scaffolding only. Drives the real UI over Chrome CDP. Does not change product code.
+ *
+ * Run from the repo root. See ../SKILL.md for the recipe.
+ */
+
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  openSync,
+} from "node:fs";
+import { dirname, isAbsolute, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const require = createRequire(join(HERE, "package.json"));
+
+function loadPlaywright() {
+  try {
+    return require("playwright");
+  } catch {
+    fail(
+      "Playwright is not installed. From the repo root run:\n  npm install --prefix .cursor/skills/verify-modern-money-district/helpers",
+    );
+  }
+}
+
+const DEFAULT_PORT = 55173;
+const DEFAULT_BIND = "127.0.0.1";
+const READY_MS = 30_000;
+
+function fail(message, code = 1) {
+  process.stderr.write(`${message}\n`);
+  process.exit(code);
+}
+
+function usage() {
+  process.stdout.write(`control-mmd — Modern Money District verification harness
+
+Usage:
+  control-mmd launch [--port 55173] [--mode dev|preview] [--bind 127.0.0.1]
+  control-mmd doctor
+  control-mmd browser start [--cdp-port 55174]
+  control-mmd browser goto --path /
+  control-mmd browser click --selector CSS | --role ROLE --name NAME
+  control-mmd browser press --key ArrowUp
+  control-mmd browser wait --selector CSS [--state visible|hidden] [--text SUB] [--timeout 15000]
+  control-mmd browser expect --selector CSS [--text SUB] [--state visible|hidden]
+  control-mmd browser text --selector CSS
+  control-mmd browser snapshot --path FILE [--feature ID] [--entry NAME]
+  control-mmd browser screenshot --path FILE [--feature ID] [--entry NAME]
+  control-mmd browser json --url /claims.json
+  control-mmd evidence-init [--id RUN]
+  control-mmd cleanup
+
+Env:
+  MMD_VERIFY_HOME   scratch dir (default /tmp/mmd-verify)
+  MMD_REPO          repo root (default: walk up from cwd)
+  CHROME_PATH       system Chrome binary
+`);
+}
+
+function parseArgs(argv) {
+  const out = { _: [] };
+  for (let i = 0; i < argv.length; i += 1) {
+    const a = argv[i];
+    if (a.startsWith("--")) {
+      const key = a.slice(2);
+      const next = argv[i + 1];
+      if (!next || next.startsWith("--")) out[key] = true;
+      else {
+        out[key] = next;
+        i += 1;
+      }
+    } else out._.push(a);
+  }
+  return out;
+}
+
+function verifyHome() {
+  return process.env.MMD_VERIFY_HOME || "/tmp/mmd-verify";
+}
+
+function paths() {
+  const home = verifyHome();
+  return {
+    home,
+    instance: join(home, "instance.json"),
+    browser: join(home, "browser.json"),
+    viteLog: join(home, "vite.log"),
+    chromeDir: join(home, "chrome-profile"),
+  };
+}
+
+function repoRoot() {
+  if (process.env.MMD_REPO) return resolve(process.env.MMD_REPO);
+  let dir = process.cwd();
+  for (;;) {
+    const pkgPath = join(dir, "package.json");
+    if (existsSync(pkgPath)) {
+      try {
+        const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+        if (pkg.name === "modern-money-district") return dir;
+      } catch {
+        /* keep walking */
+      }
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  fail("Run from the modern-money-district repo (or set MMD_REPO).");
+}
+
+function skillRoot() {
+  return join(repoRoot(), ".cursor/skills/verify-modern-money-district");
+}
+
+function readJson(file) {
+  return JSON.parse(readFileSync(file, "utf8"));
+}
+
+function writeJson(file, data) {
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
+}
+
+function pidAlive(pid) {
+  if (!pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function fetchText(url) {
+  const res = await fetch(url);
+  const body = await res.text();
+  return { status: res.status, body, headers: res.headers };
+}
+
+function chromeBin() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    "/usr/local/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ].filter(Boolean);
+  const found = candidates.find((p) => existsSync(p));
+  if (!found) fail("No Chrome binary. Set CHROME_PATH.");
+  return found;
+}
+
+function portPids(port) {
+  try {
+    const { execSync } = require("node:child_process");
+    const out = execSync(`ss -ltnp "sport = :${port}" 2>/dev/null || true`, {
+      encoding: "utf8",
+    });
+    const pids = new Set();
+    for (const m of out.matchAll(/pid=(\d+)/g)) pids.add(Number(m[1]));
+    return [...pids];
+  } catch {
+    return [];
+  }
+}
+
+function ancestorSet(pid) {
+  const seen = new Set();
+  let cur = pid;
+  while (cur && cur > 1 && !seen.has(cur)) {
+    seen.add(cur);
+    try {
+      const stat = readFileSync(`/proc/${cur}/stat`, "utf8");
+      const close = stat.indexOf(") ");
+      const ppid = Number(stat.slice(close + 2).split(" ")[1]);
+      cur = ppid;
+    } catch {
+      break;
+    }
+  }
+  return seen;
+}
+
+function portOwnedByTree(port, rootPid) {
+  const listeners = portPids(port);
+  if (listeners.length === 0) return false;
+  const tree = ancestorSet(listeners[0]);
+  // walk children of rootPid too
+  const queue = [rootPid];
+  const kids = new Set();
+  while (queue.length) {
+    const p = queue.pop();
+    if (!p || kids.has(p)) continue;
+    kids.add(p);
+    const task = `/proc/${p}/task`;
+    try {
+      const { readdirSync } = require("node:fs");
+      for (const tid of readdirSync(task)) {
+        const children = `/proc/${p}/task/${tid}/children`;
+        if (!existsSync(children)) continue;
+        for (const c of readFileSync(children, "utf8").trim().split(/\s+/).filter(Boolean)) {
+          queue.push(Number(c));
+        }
+      }
+    } catch {
+      /* no /proc children */
+    }
+  }
+  return listeners.some((lp) => kids.has(lp) || tree.has(rootPid));
+}
+
+async function waitHttp(url, needle, timeoutMs) {
+  const start = Date.now();
+  let last = "";
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const { status, body } = await fetchText(url);
+      last = `${status} ${body.slice(0, 80).replace(/\s+/g, " ")}`;
+      if (status === 200 && (!needle || body.includes(needle))) return;
+    } catch (err) {
+      last = String(err.message || err);
+    }
+    await sleep(200);
+  }
+  fail(`Timed out waiting for ${url} (${last})`);
+}
+
+function ensureRepoReady(root) {
+  if (!existsSync(join(root, "node_modules", "vite"))) {
+    fail("App deps missing. From the repo root run: npm i");
+  }
+}
+
+async function cmdLaunch(args) {
+  const p = paths();
+  const root = repoRoot();
+  ensureRepoReady(root);
+  mkdirSync(p.home, { recursive: true });
+
+  if (existsSync(p.instance)) {
+    const inst = readJson(p.instance);
+    if (pidAlive(inst.pid)) {
+      fail(
+        `This verify home already has a live instance (pid ${inst.pid} on ${inst.url}). Cleanup first, or set MMD_VERIFY_HOME to a new dir and pick a free --port.`,
+      );
+    }
+  }
+
+  const port = Number(args.port || DEFAULT_PORT);
+  const bind = args.bind || DEFAULT_BIND;
+  const mode = args.mode === "preview" ? "preview" : "dev";
+  if (!Number.isInteger(port) || port < 1) fail("Invalid --port");
+
+  const foreign = portPids(port);
+  if (foreign.length) {
+    fail(`Port ${port} is already bound by pid ${foreign.join(", ")}. Pick another --port. Do not steal a shared instance.`);
+  }
+
+  if (mode === "preview" && !existsSync(join(root, "dist", "index.html"))) {
+    fail("preview mode needs a build. Run: npm run build");
+  }
+
+  const fd = openSync(p.viteLog, "w");
+  const child = spawn("npm", ["run", mode, "--", "--host", bind, "--port", String(port), "--strictPort"], {
+    cwd: root,
+    detached: true,
+    stdio: ["ignore", fd, fd],
+    env: { ...process.env, BROWSER: "none" },
+  });
+  child.unref();
+
+  const url = `http://${bind}:${port}`;
+  const inst = {
+    pid: child.pid,
+    port,
+    bind,
+    url,
+    mode,
+    cwd: root,
+    startedAt: new Date().toISOString(),
+    log: p.viteLog,
+  };
+  writeJson(p.instance, inst);
+
+  try {
+    await waitHttp(`${url}/`, "PRESS START", READY_MS);
+  } catch (err) {
+    try {
+      process.kill(-inst.pid, "SIGTERM");
+    } catch {
+      /* ignore */
+    }
+    throw err;
+  }
+
+  process.stdout.write(`${JSON.stringify({ ok: true, ...inst }, null, 2)}\n`);
+}
+
+function loadInstanceOrFail() {
+  const p = paths();
+  if (!existsSync(p.instance)) fail("No instance.json. Launch first.");
+  return readJson(p.instance);
+}
+
+async function cmdDoctor() {
+  const p = paths();
+  const report = {
+    ok: false,
+    home: p.home,
+    checks: {},
+  };
+  const add = (name, pass, detail) => {
+    report.checks[name] = { pass, detail };
+  };
+
+  if (!existsSync(p.instance)) {
+    add("instance-file", false, "missing instance.json");
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    process.exit(1);
+  }
+  const inst = readJson(p.instance);
+  add("instance-file", true, inst.url);
+
+  const alive = pidAlive(inst.pid);
+  add("pid-alive", alive, `pid ${inst.pid}`);
+
+  const listeners = portPids(inst.port);
+  const owned = alive && listeners.length > 0 && portOwnedByTree(inst.port, inst.pid);
+  add("port-owned", owned, listeners.length ? `pids ${listeners.join(",")}` : "nothing listening");
+
+  let rootBody = "";
+  let districtBody = "";
+  try {
+    const r = await fetchText(`${inst.url}/`);
+    rootBody = r.body;
+    add("get-root", r.status === 200 && r.body.includes("PRESS START") && r.body.includes("LATE FRIDAY"), `HTTP ${r.status}`);
+  } catch (err) {
+    add("get-root", false, String(err.message || err));
+  }
+  try {
+    const r = await fetchText(`${inst.url}/district.html`);
+    districtBody = r.body;
+    add(
+      "get-district",
+      r.status === 200 && r.body.includes("Enter the district") && r.body.includes('id="enter-btn"'),
+      `HTTP ${r.status}`,
+    );
+  } catch (err) {
+    add("get-district", false, String(err.message || err));
+  }
+
+  try {
+    const r = await fetchText(`${inst.url}/claims.json`);
+    if (r.status !== 200) {
+      add("get-claims", false, `HTTP ${r.status}`);
+    } else {
+      const data = JSON.parse(r.body);
+      const claims = Array.isArray(data.claims) ? data.claims : [];
+      const verified = claims.filter((c) => c && c.verified === true).length;
+      add(
+        "get-claims",
+        Boolean(data.meta && typeof data.meta.title === "string" && Array.isArray(data.claims)),
+        `${claims.length} claims, ${verified} verified:true (from file, not invented)`,
+      );
+      report.claims = {
+        title: data.meta?.title ?? null,
+        count: claims.length,
+        verifiedTrue: verified,
+      };
+    }
+  } catch (err) {
+    add("get-claims", false, String(err.message || err));
+  }
+
+  add("root-identity", rootBody.includes("id=\"start\""), "PRESS START button present");
+  add("district-identity", districtBody.includes("id=\"enter-btn\""), "Enter the district present");
+
+  report.ok = Object.values(report.checks).every((c) => c.pass);
+  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  if (!report.ok) process.exit(1);
+}
+
+async function cmdBrowserStart(args) {
+  const p = paths();
+  const inst = loadInstanceOrFail();
+  if (existsSync(p.browser)) {
+    const prev = readJson(p.browser);
+    if (pidAlive(prev.pid)) {
+      fail(`Browser already live (pid ${prev.pid}). Cleanup first or reuse it.`);
+    }
+  }
+
+  const cdpPort = Number(args["cdp-port"] || inst.port + 1);
+  rmSync(p.chromeDir, { recursive: true, force: true });
+  mkdirSync(p.chromeDir, { recursive: true });
+
+  const chrome = chromeBin();
+  const chromeArgs = [
+    `--remote-debugging-port=${cdpPort}`,
+    "--remote-debugging-address=127.0.0.1",
+    `--user-data-dir=${p.chromeDir}`,
+    "--no-first-run",
+    "--no-default-browser-check",
+    "--disable-dev-shm-usage",
+    "--disable-extensions",
+    "--window-size=1280,800",
+    "--use-gl=angle",
+    "--ignore-gpu-blocklist",
+    "--headless=new",
+    "--no-sandbox",
+    "about:blank",
+  ];
+  const log = openSync(join(p.home, "chrome.log"), "w");
+  const child = spawn(chrome, chromeArgs, {
+    detached: true,
+    stdio: ["ignore", log, log],
+  });
+  child.unref();
+
+  const cdp = `http://127.0.0.1:${cdpPort}`;
+  const started = Date.now();
+  let version = null;
+  while (Date.now() - started < 15_000) {
+    try {
+      const r = await fetchText(`${cdp}/json/version`);
+      if (r.status === 200) {
+        version = JSON.parse(r.body);
+        break;
+      }
+    } catch {
+      /* still booting */
+    }
+    await sleep(150);
+  }
+  if (!version) {
+    try {
+      process.kill(-child.pid, "SIGTERM");
+    } catch {
+      /* ignore */
+    }
+    fail("Chrome CDP did not come up.");
+  }
+
+  writeJson(p.browser, {
+    pid: child.pid,
+    cdpPort,
+    cdp,
+    ws: version.webSocketDebuggerUrl,
+    startedAt: new Date().toISOString(),
+  });
+
+  const { chromium } = loadPlaywright();
+  const browser = await chromium.connectOverCDP(cdp);
+  const context = browser.contexts()[0] ?? (await browser.newContext({ viewport: { width: 1280, height: 800 } }));
+  const page = context.pages()[0] ?? (await context.newPage());
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(inst.url, { waitUntil: "domcontentloaded" });
+  // Disconnect only — do not browser.close() (that would kill Chrome).
+  process.stdout.write(`${JSON.stringify({ ok: true, cdp, url: page.url() }, null, 2)}\n`);
+}
+
+function loadBrowserOrFail() {
+  const p = paths();
+  if (!existsSync(p.browser)) fail("No browser session. Run: control-mmd browser start");
+  const b = readJson(p.browser);
+  if (!pidAlive(b.pid)) fail("Chrome PID is dead. Run: control-mmd browser start");
+  return b;
+}
+
+async function withPage(fn) {
+  const b = loadBrowserOrFail();
+  const { chromium } = loadPlaywright();
+  const browser = await chromium.connectOverCDP(b.cdp);
+  try {
+    const context = browser.contexts()[0];
+    if (!context) fail("CDP has no browser context.");
+    const page =
+      context.pages().find((pg) => !pg.url().startsWith("chrome-extension:")) ??
+      (await context.newPage());
+    return await fn(page);
+  } finally {
+    // Drop the connection. Do not close the browser.
+  }
+}
+
+function locator(page, args) {
+  if (args.selector) return page.locator(args.selector).first();
+  if (args.role && args.name) return page.getByRole(args.role, { name: args.name }).first();
+  fail("Need --selector or --role plus --name");
+}
+
+function stampMeta(path, args) {
+  if (!args.feature && !args.entry) return;
+  const metaPath = join(dirname(resolve(path)), "meta.json");
+  let meta = {};
+  if (existsSync(metaPath)) {
+    try {
+      meta = readJson(metaPath);
+    } catch {
+      meta = {};
+    }
+  }
+  meta.feature = args.feature || meta.feature || null;
+  meta.entry = args.entry || meta.entry || null;
+  meta.updatedAt = new Date().toISOString();
+  writeJson(metaPath, meta);
+}
+
+async function cmdBrowser(args) {
+  const action = args._[1];
+  if (!action || action === "start") {
+    if (action === "start") return cmdBrowserStart(args);
+    fail("browser needs a subcommand (start|goto|click|press|wait|expect|text|snapshot|screenshot|json)");
+  }
+
+  if (action === "goto") {
+    const inst = loadInstanceOrFail();
+    const path = args.path || "/";
+    await withPage((page) => page.goto(new URL(path, inst.url).toString(), { waitUntil: "domcontentloaded" }));
+    process.stdout.write(`${JSON.stringify({ ok: true, path }, null, 2)}\n`);
+    return;
+  }
+
+  if (action === "click") {
+    await withPage(async (page) => {
+      await locator(page, args).click({ timeout: 10_000 });
+    });
+    process.stdout.write(`${JSON.stringify({ ok: true, clicked: args.selector || `${args.role}:${args.name}` }, null, 2)}\n`);
+    return;
+  }
+
+  if (action === "press") {
+    if (!args.key) fail("--key required");
+    await withPage(async (page) => {
+      await page.keyboard.press(args.key);
+    });
+    process.stdout.write(`${JSON.stringify({ ok: true, key: args.key }, null, 2)}\n`);
+    return;
+  }
+
+  if (action === "wait") {
+    if (!args.selector) fail("--selector required");
+    const timeout = Number(args.timeout || 15_000);
+    const state = args.state || "visible";
+    await withPage(async (page) => {
+      const loc = page.locator(args.selector).first();
+      await loc.waitFor({ state, timeout });
+      if (args.text) {
+        const started = Date.now();
+        for (;;) {
+          const text = await loc.innerText();
+          if (text.includes(args.text)) return;
+          if (Date.now() - started > timeout) fail(`# wait text "${args.text}" not in ${args.selector}`);
+          await sleep(100);
+        }
+      }
+    });
+    process.stdout.write(`${JSON.stringify({ ok: true, selector: args.selector, state }, null, 2)}\n`);
+    return;
+  }
+
+  if (action === "expect") {
+    if (!args.selector) fail("--selector required");
+    const result = await withPage(async (page) => {
+      const loc = page.locator(args.selector).first();
+      const count = await loc.count();
+      if (!count) return { ok: false, reason: "not found" };
+      const visible = await loc.isVisible();
+      const text = await loc.innerText().catch(() => "");
+      if (args.state === "hidden" && visible) return { ok: false, reason: "visible", text };
+      if (args.state === "visible" && !visible) return { ok: false, reason: "hidden", text };
+      if (args.text && !text.includes(args.text)) return { ok: false, reason: `missing text ${args.text}`, text };
+      return { ok: true, visible, text };
+    });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    if (!result.ok) process.exit(1);
+    return;
+  }
+
+  if (action === "text") {
+    if (!args.selector) fail("--selector required");
+    const text = await withPage((page) => locator(page, args).innerText());
+    process.stdout.write(`${text}\n`);
+    return;
+  }
+
+  if (action === "snapshot") {
+    if (!args.path) fail("--path required");
+    const out = resolvePath(args.path);
+    mkdirSync(dirname(out), { recursive: true });
+    const dump = await withPage(async (page) => {
+      try {
+        return await page.locator("body").ariaSnapshot();
+      } catch {
+        return page.evaluate(() => {
+          const bits = [];
+          for (const el of document.querySelectorAll("h1,h2,button,a,label,[id]")) {
+            if (!(el instanceof HTMLElement)) continue;
+            const style = getComputedStyle(el);
+            if (style.display === "none" || style.visibility === "hidden") continue;
+            const t = (el.innerText || "").replace(/\s+/g, " ").trim();
+            if (!t) continue;
+            bits.push(`${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""} ${t.slice(0, 160)}`);
+          }
+          return bits.join("\n");
+        });
+      }
+    });
+    writeFileSync(out, `${dump}\n`);
+    stampMeta(out, args);
+    process.stdout.write(`${JSON.stringify({ ok: true, path: out }, null, 2)}\n`);
+    return;
+  }
+
+  if (action === "screenshot") {
+    if (!args.path) fail("--path required");
+    const out = resolvePath(args.path);
+    mkdirSync(dirname(out), { recursive: true });
+    await withPage((page) => page.screenshot({ path: out, fullPage: true }));
+    stampMeta(out, args);
+    process.stdout.write(`${JSON.stringify({ ok: true, path: out }, null, 2)}\n`);
+    return;
+  }
+
+  if (action === "json") {
+    const inst = loadInstanceOrFail();
+    const url = args.url || "/claims.json";
+    const { status, body } = await fetchText(new URL(url, inst.url).toString());
+    if (status !== 200) fail(`${url} HTTP ${status}`);
+    process.stdout.write(`${body}\n`);
+    return;
+  }
+
+  fail(`Unknown browser action: ${action}`);
+}
+
+function resolvePath(p) {
+  return isAbsolute(p) ? p : resolve(process.cwd(), p);
+}
+
+function cmdEvidenceInit(args) {
+  const id = String(args.id || new Date().toISOString().replace(/[:.]/g, "-"));
+  const dir = join(skillRoot(), "evidence", id);
+  mkdirSync(dir, { recursive: true });
+  const meta = {
+    id,
+    createdAt: new Date().toISOString(),
+    feature: args.feature || null,
+    entry: args.entry || null,
+  };
+  writeJson(join(dir, "meta.json"), meta);
+  process.stdout.write(`${dir}\n`);
+}
+
+function killTree(pid) {
+  if (!pid || !pidAlive(pid)) return;
+  try {
+    process.kill(-pid, "SIGTERM");
+  } catch {
+    try {
+      process.kill(pid, "SIGTERM");
+    } catch {
+      /* already gone */
+    }
+  }
+}
+
+function cmdCleanup() {
+  const p = paths();
+  const kept = [];
+  if (existsSync(p.browser)) {
+    try {
+      killTree(readJson(p.browser).pid);
+    } catch {
+      /* ignore */
+    }
+    rmSync(p.browser, { force: true });
+  }
+  if (existsSync(p.instance)) {
+    try {
+      killTree(readJson(p.instance).pid);
+    } catch {
+      /* ignore */
+    }
+    rmSync(p.instance, { force: true });
+  }
+  rmSync(p.chromeDir, { recursive: true, force: true });
+  rmSync(p.viteLog, { force: true });
+  rmSync(join(p.home, "chrome.log"), { force: true });
+  const evidence = join(skillRoot(), "evidence");
+  kept.push(evidence);
+  process.stdout.write(`${JSON.stringify({ ok: true, removedScratch: p.home, evidenceKept: kept }, null, 2)}\n`);
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const cmd = args._[0];
+  if (!cmd || cmd === "help" || args.help) {
+    usage();
+    return;
+  }
+  if (cmd === "launch") return cmdLaunch(args);
+  if (cmd === "doctor") return cmdDoctor();
+  if (cmd === "browser") return cmdBrowser(args);
+  if (cmd === "evidence-init") return cmdEvidenceInit(args);
+  if (cmd === "cleanup") return cmdCleanup();
+  fail(`Unknown command: ${cmd}`);
+}
+
+main().catch((err) => {
+  fail(err.stack || String(err));
+});
