@@ -90,6 +90,7 @@ control-mmd browser click --role button --name "Enter the district"
 control-mmd browser press --key ArrowUp
 control-mmd browser wait --selector "#attract" --state hidden
 control-mmd browser expect --selector "#hud-clock" --text "FRI"
+control-mmd browser expect --selector "#hud-amount" --text '$1,000.00'   # single quotes: $ is literal
 control-mmd browser screenshot --path "$EVIDENCE/play.png"
 control-mmd browser snapshot --path "$EVIDENCE/play.aria.txt"
 ```

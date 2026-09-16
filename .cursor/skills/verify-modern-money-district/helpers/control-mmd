@@ -751,14 +751,8 @@ function killTree(pid) {
 
 function cmdCleanup() {
   const p = paths();
-  if (existsSync(p.sock)) {
-    try {
-      const client = net.createConnection(p.sock);
-      client.on("connect", () => client.end(`${JSON.stringify({ op: "quit" })}\n`));
-    } catch {
-      /* ignore */
-    }
-  }
+  // Kill recorded PIDs only. Do not write to the daemon socket — a dying
+  // listener raises EPIPE and that must not fail cleanup.
   if (existsSync(p.browser)) {
     try {
       const b = readJson(p.browser);

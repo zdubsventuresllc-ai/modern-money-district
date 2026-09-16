@@ -27,8 +27,8 @@ Preconditions:
 
 - **Confirm attract.** Read the sheet. Run `control-mmd browser expect --selector "#start" --text "PRESS START" --state visible` and `control-mmd browser screenshot --path "$EVIDENCE/attract.png" --feature late-friday --entry attract`. The PNG shows LATE FRIDAY and PRESS START.
 - **Start a run.** Choose PRESS START. Run `control-mmd browser click --role button --name "PRESS START"`. `#attract` becomes hidden; `#hud-amount` reads `$1,000.00`; `#hud-lives` contains `$`; `#hud-clock` contains `FRI`.
-- **Assert play HUD.** Run `control-mmd browser wait --selector "#attract" --state hidden` then `control-mmd browser expect --selector "#hud-amount" --text "$1,000.00"`. Clock may already have ticked off `4:55` — assert `FRI`, not a frozen minute.
-- **Hop.** Press up. Run `control-mmd browser press --key ArrowUp`. The canvas stays visible; a toast may read `INTERCHANGE` if that hop entered a card lane (row above the payer walk). Pad equivalent: `control-mmd browser click --selector "#pad [data-dir=up]"`.
+- **Assert play HUD.** Run `control-mmd browser wait --selector "#attract" --state hidden` then `control-mmd browser expect --selector "#hud-amount" --text '$1,000.00'` (single quotes — a double-quoted `$1,000.00` is eaten by the shell). Clock may already have ticked off `4:55` — assert `FRI`, not a frozen minute.
+- **Hop.** Press up. Run `control-mmd browser press --key ArrowUp`. The canvas stays visible. A hop into the first card lane taxes the payment (`$1,000.00` → `$971.00`) and may also flash `INTERCHANGE` or `DECLINED · DO NOT HONOR` if a taxi hits. Either HUD change or toast is the hop proof. Pad equivalent: `control-mmd browser click --selector "#pad [data-dir=up]"`.
 - **Sound (optional).** Run `control-mmd browser click --selector "#sound"`. The button text becomes `Sound on` and `aria-pressed` is `true`. Toggle back if you need silence.
 - **Proof.** Run `control-mmd browser screenshot --path "$EVIDENCE/play.png" --feature late-friday --entry press-start` and `control-mmd browser snapshot --path "$EVIDENCE/play.aria.txt"`. Artifacts show the play HUD (Clock / Payment / Lives) and no PRESS START overlay.
 
@@ -40,3 +40,4 @@ Preconditions:
 - `window.__lateFriday` is not a user control. A proof that only sets `phase = "play"` is invalid.
 - Completing five storefronts (level clear + guest line) is a long play. Do not require a full clear for `lf-start` / `lf-hop`.
 - Sound is off by default. Enabling it is not required for proof.
+- Quote dollar amounts with single quotes (`--text '$1,000.00'`). Double quotes expand `$1`.
