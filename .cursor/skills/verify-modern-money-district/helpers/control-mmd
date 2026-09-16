@@ -4,6 +4,9 @@
  * Scaffolding only. Drives the real UI over Chrome CDP. Does not change product code.
  *
  * Run from the repo root. See ../SKILL.md for the recipe.
+ *
+ * Browser commands talk to a long-lived daemon over a unix socket. A fresh
+ * Playwright connectOverCDP per command hangs on this image; one session does not.
  */
 
 import { spawn } from "node:child_process";
@@ -16,11 +19,13 @@ import {
   writeFileSync,
   openSync,
 } from "node:fs";
+import net from "node:net";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(join(HERE, "package.json"));
+const SELF = fileURLToPath(import.meta.url);
 
 function loadPlaywright() {
   try {
@@ -63,7 +68,7 @@ Usage:
 Env:
   MMD_VERIFY_HOME   scratch dir (default /tmp/mmd-verify)
   MMD_REPO          repo root (default: walk up from cwd)
-  CHROME_PATH       system Chrome binary
+  CHROME_PATH       system Chrome binary (prefer the ELF, not a wrapper)
 `);
 }
 
@@ -94,7 +99,10 @@ function paths() {
     home,
     instance: join(home, "instance.json"),
     browser: join(home, "browser.json"),
+    sock: join(home, "browser.sock"),
     viteLog: join(home, "vite.log"),
+    chromeLog: join(home, "chrome.log"),
+    daemonLog: join(home, "daemon.log"),
     chromeDir: join(home, "chrome-profile"),
   };
 }
@@ -149,14 +157,15 @@ function sleep(ms) {
 async function fetchText(url) {
   const res = await fetch(url);
   const body = await res.text();
-  return { status: res.status, body, headers: res.headers };
+  return { status: res.status, body };
 }
 
 function chromeBin() {
   const candidates = [
     process.env.CHROME_PATH,
-    "/usr/local/bin/google-chrome",
+    "/opt/google/chrome/chrome",
     "/usr/bin/google-chrome-stable",
+    "/usr/local/bin/google-chrome",
     "/usr/bin/google-chrome",
     "/usr/bin/chromium",
     "/usr/bin/chromium-browser",
@@ -169,48 +178,32 @@ function chromeBin() {
 function portPids(port) {
   try {
     const { execSync } = require("node:child_process");
-    const out = execSync(`ss -ltnp "sport = :${port}" 2>/dev/null || true`, {
+    const out = execSync(`lsof -iTCP:${port} -sTCP:LISTEN -n -P 2>/dev/null || true`, {
       encoding: "utf8",
     });
     const pids = new Set();
-    for (const m of out.matchAll(/pid=(\d+)/g)) pids.add(Number(m[1]));
+    for (const line of out.split("\n").slice(1)) {
+      const parts = line.trim().split(/\s+/);
+      const pid = Number(parts[1]);
+      if (Number.isInteger(pid) && pid > 0) pids.add(pid);
+    }
     return [...pids];
   } catch {
     return [];
   }
 }
 
-function ancestorSet(pid) {
-  const seen = new Set();
-  let cur = pid;
-  while (cur && cur > 1 && !seen.has(cur)) {
-    seen.add(cur);
-    try {
-      const stat = readFileSync(`/proc/${cur}/stat`, "utf8");
-      const close = stat.indexOf(") ");
-      const ppid = Number(stat.slice(close + 2).split(" ")[1]);
-      cur = ppid;
-    } catch {
-      break;
-    }
-  }
-  return seen;
-}
-
-function portOwnedByTree(port, rootPid) {
-  const listeners = portPids(port);
-  if (listeners.length === 0) return false;
-  const tree = ancestorSet(listeners[0]);
-  // walk children of rootPid too
-  const queue = [rootPid];
+function collectDescendants(rootPid) {
   const kids = new Set();
+  const queue = [rootPid];
   while (queue.length) {
     const p = queue.pop();
     if (!p || kids.has(p)) continue;
     kids.add(p);
-    const task = `/proc/${p}/task`;
     try {
       const { readdirSync } = require("node:fs");
+      const task = `/proc/${p}/task`;
+      if (!existsSync(task)) continue;
       for (const tid of readdirSync(task)) {
         const children = `/proc/${p}/task/${tid}/children`;
         if (!existsSync(children)) continue;
@@ -222,7 +215,30 @@ function portOwnedByTree(port, rootPid) {
       /* no /proc children */
     }
   }
-  return listeners.some((lp) => kids.has(lp) || tree.has(rootPid));
+  return kids;
+}
+
+function ancestorSet(pid) {
+  const seen = new Set();
+  let cur = pid;
+  while (cur && cur > 1 && !seen.has(cur)) {
+    seen.add(cur);
+    try {
+      const stat = readFileSync(`/proc/${cur}/stat`, "utf8");
+      const close = stat.indexOf(") ");
+      cur = Number(stat.slice(close + 2).split(" ")[1]);
+    } catch {
+      break;
+    }
+  }
+  return seen;
+}
+
+function portOwnedByTree(port, rootPid) {
+  const listeners = portPids(port);
+  if (!listeners.length) return false;
+  const descendants = collectDescendants(rootPid);
+  return listeners.some((lp) => descendants.has(lp) || ancestorSet(lp).has(rootPid));
 }
 
 async function waitHttp(url, needle, timeoutMs) {
@@ -301,11 +317,7 @@ async function cmdLaunch(args) {
   try {
     await waitHttp(`${url}/`, "PRESS START", READY_MS);
   } catch (err) {
-    try {
-      process.kill(-inst.pid, "SIGTERM");
-    } catch {
-      /* ignore */
-    }
+    killTree(inst.pid);
     throw err;
   }
 
@@ -320,11 +332,7 @@ function loadInstanceOrFail() {
 
 async function cmdDoctor() {
   const p = paths();
-  const report = {
-    ok: false,
-    home: p.home,
-    checks: {},
-  };
+  const report = { ok: false, home: p.home, checks: {} };
   const add = (name, pass, detail) => {
     report.checks[name] = { pass, detail };
   };
@@ -378,22 +386,70 @@ async function cmdDoctor() {
         Boolean(data.meta && typeof data.meta.title === "string" && Array.isArray(data.claims)),
         `${claims.length} claims, ${verified} verified:true (from file, not invented)`,
       );
-      report.claims = {
-        title: data.meta?.title ?? null,
-        count: claims.length,
-        verifiedTrue: verified,
-      };
+      report.claims = { title: data.meta?.title ?? null, count: claims.length, verifiedTrue: verified };
     }
   } catch (err) {
     add("get-claims", false, String(err.message || err));
   }
 
-  add("root-identity", rootBody.includes("id=\"start\""), "PRESS START button present");
-  add("district-identity", districtBody.includes("id=\"enter-btn\""), "Enter the district present");
+  add("root-identity", rootBody.includes('id="start"'), "PRESS START button present");
+  add("district-identity", districtBody.includes('id="enter-btn"'), "Enter the district present");
 
   report.ok = Object.values(report.checks).every((c) => c.pass);
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   if (!report.ok) process.exit(1);
+}
+
+function resolvePath(p) {
+  return isAbsolute(p) ? p : resolve(process.cwd(), p);
+}
+
+function stampMeta(filePath, args) {
+  if (!args.feature && !args.entry) return;
+  const metaPath = join(dirname(resolve(filePath)), "meta.json");
+  let meta = {};
+  if (existsSync(metaPath)) {
+    try {
+      meta = readJson(metaPath);
+    } catch {
+      meta = {};
+    }
+  }
+  meta.feature = args.feature || meta.feature || null;
+  meta.entry = args.entry || meta.entry || null;
+  meta.updatedAt = new Date().toISOString();
+  writeJson(metaPath, meta);
+}
+
+async function rpc(msg, timeoutMs = 25_000) {
+  const p = paths();
+  if (!existsSync(p.sock)) fail("No browser daemon. Run: control-mmd browser start");
+  return new Promise((resolve, reject) => {
+    const client = net.createConnection(p.sock);
+    let buf = "";
+    const t = setTimeout(() => {
+      client.destroy();
+      reject(new Error(`browser daemon timeout (${msg.op})`));
+    }, timeoutMs);
+    client.on("connect", () => {
+      client.write(`${JSON.stringify(msg)}\n`);
+    });
+    client.on("data", (d) => {
+      buf += d;
+    });
+    client.on("end", () => {
+      clearTimeout(t);
+      try {
+        resolve(JSON.parse(buf));
+      } catch (err) {
+        reject(new Error(`daemon returned non-JSON: ${buf.slice(0, 200)} (${err.message})`));
+      }
+    });
+    client.on("error", (err) => {
+      clearTimeout(t);
+      reject(err);
+    });
+  });
 }
 
 async function cmdBrowserStart(args) {
@@ -401,13 +457,14 @@ async function cmdBrowserStart(args) {
   const inst = loadInstanceOrFail();
   if (existsSync(p.browser)) {
     const prev = readJson(p.browser);
-    if (pidAlive(prev.pid)) {
-      fail(`Browser already live (pid ${prev.pid}). Cleanup first or reuse it.`);
+    if (pidAlive(prev.daemonPid) || pidAlive(prev.pid)) {
+      fail(`Browser already live (chrome ${prev.pid}, daemon ${prev.daemonPid}). Cleanup first or reuse it.`);
     }
   }
 
   const cdpPort = Number(args["cdp-port"] || inst.port + 1);
   rmSync(p.chromeDir, { recursive: true, force: true });
+  rmSync(p.sock, { force: true });
   mkdirSync(p.chromeDir, { recursive: true });
 
   const chrome = chromeBin();
@@ -419,17 +476,21 @@ async function cmdBrowserStart(args) {
     "--no-default-browser-check",
     "--disable-dev-shm-usage",
     "--disable-extensions",
+    "--disable-sync",
+    "--disable-background-networking",
+    "--disable-component-update",
     "--window-size=1280,800",
     "--use-gl=angle",
+    "--use-angle=swiftshader-webgl",
     "--ignore-gpu-blocklist",
     "--headless=new",
     "--no-sandbox",
     "about:blank",
   ];
-  const log = openSync(join(p.home, "chrome.log"), "w");
+  const clog = openSync(p.chromeLog, "w");
   const child = spawn(chrome, chromeArgs, {
     detached: true,
-    stdio: ["ignore", log, log],
+    stdio: ["ignore", clog, clog],
   });
   child.unref();
 
@@ -449,11 +510,7 @@ async function cmdBrowserStart(args) {
     await sleep(150);
   }
   if (!version) {
-    try {
-      process.kill(-child.pid, "SIGTERM");
-    } catch {
-      /* ignore */
-    }
+    killTree(child.pid);
     fail("Chrome CDP did not come up.");
   }
 
@@ -465,150 +522,107 @@ async function cmdBrowserStart(args) {
     startedAt: new Date().toISOString(),
   });
 
-  const { chromium } = loadPlaywright();
-  const browser = await chromium.connectOverCDP(cdp);
-  const context = browser.contexts()[0] ?? (await browser.newContext({ viewport: { width: 1280, height: 800 } }));
-  const page = context.pages()[0] ?? (await context.newPage());
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto(inst.url, { waitUntil: "domcontentloaded" });
-  // Disconnect only — do not browser.close() (that would kill Chrome).
-  process.stdout.write(`${JSON.stringify({ ok: true, cdp, url: page.url() }, null, 2)}\n`);
+  const dlog = openSync(p.daemonLog, "w");
+  const daemon = spawn(process.execPath, [SELF, "__daemon"], {
+    detached: true,
+    stdio: ["ignore", dlog, dlog],
+    env: { ...process.env, MMD_VERIFY_HOME: p.home, MMD_REPO: repoRoot() },
+  });
+  daemon.unref();
+
+  const waitStart = Date.now();
+  while (Date.now() - waitStart < 15_000) {
+    if (existsSync(p.sock)) {
+      try {
+        const ping = await rpc({ op: "ping" }, 3000);
+        if (ping.ok) {
+          const rec = readJson(p.browser);
+          rec.daemonPid = daemon.pid;
+          writeJson(p.browser, rec);
+          process.stdout.write(`${JSON.stringify({ ok: true, cdp, url: ping.url, daemonPid: daemon.pid }, null, 2)}\n`);
+          return;
+        }
+      } catch {
+        /* daemon still binding */
+      }
+    }
+    await sleep(150);
+  }
+  killTree(daemon.pid);
+  killTree(child.pid);
+  fail(`Browser daemon did not come up. See ${p.daemonLog}`);
 }
 
-function loadBrowserOrFail() {
+async function cmdDaemon() {
   const p = paths();
-  if (!existsSync(p.browser)) fail("No browser session. Run: control-mmd browser start");
+  const inst = readJson(p.instance);
   const b = readJson(p.browser);
-  if (!pidAlive(b.pid)) fail("Chrome PID is dead. Run: control-mmd browser start");
-  return b;
-}
-
-async function withPage(fn) {
-  const b = loadBrowserOrFail();
   const { chromium } = loadPlaywright();
   const browser = await chromium.connectOverCDP(b.cdp);
-  try {
-    const context = browser.contexts()[0];
-    if (!context) fail("CDP has no browser context.");
-    const page =
-      context.pages().find((pg) => !pg.url().startsWith("chrome-extension:")) ??
-      (await context.newPage());
-    return await fn(page);
-  } finally {
-    // Drop the connection. Do not close the browser.
+  const context = browser.contexts()[0] ?? (await browser.newContext({ viewport: { width: 1280, height: 800 } }));
+  let page = context.pages().find((pg) => !pg.url().startsWith("chrome-extension:")) ?? (await context.newPage());
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(inst.url, { waitUntil: "domcontentloaded" });
+
+  function loc(page, msg) {
+    if (msg.selector) return page.locator(msg.selector).first();
+    if (msg.role && msg.name) return page.getByRole(msg.role, { name: msg.name }).first();
+    throw new Error("Need selector or role+name");
   }
-}
 
-function locator(page, args) {
-  if (args.selector) return page.locator(args.selector).first();
-  if (args.role && args.name) return page.getByRole(args.role, { name: args.name }).first();
-  fail("Need --selector or --role plus --name");
-}
-
-function stampMeta(path, args) {
-  if (!args.feature && !args.entry) return;
-  const metaPath = join(dirname(resolve(path)), "meta.json");
-  let meta = {};
-  if (existsSync(metaPath)) {
-    try {
-      meta = readJson(metaPath);
-    } catch {
-      meta = {};
+  async function handle(msg) {
+    if (msg.op === "ping") return { ok: true, url: page.url() };
+    if (msg.op === "goto") {
+      await page.goto(new URL(msg.path || "/", inst.url).toString(), { waitUntil: "domcontentloaded" });
+      return { ok: true, path: msg.path, url: page.url() };
     }
-  }
-  meta.feature = args.feature || meta.feature || null;
-  meta.entry = args.entry || meta.entry || null;
-  meta.updatedAt = new Date().toISOString();
-  writeJson(metaPath, meta);
-}
-
-async function cmdBrowser(args) {
-  const action = args._[1];
-  if (!action || action === "start") {
-    if (action === "start") return cmdBrowserStart(args);
-    fail("browser needs a subcommand (start|goto|click|press|wait|expect|text|snapshot|screenshot|json)");
-  }
-
-  if (action === "goto") {
-    const inst = loadInstanceOrFail();
-    const path = args.path || "/";
-    await withPage((page) => page.goto(new URL(path, inst.url).toString(), { waitUntil: "domcontentloaded" }));
-    process.stdout.write(`${JSON.stringify({ ok: true, path }, null, 2)}\n`);
-    return;
-  }
-
-  if (action === "click") {
-    await withPage(async (page) => {
-      await locator(page, args).click({ timeout: 10_000 });
-    });
-    process.stdout.write(`${JSON.stringify({ ok: true, clicked: args.selector || `${args.role}:${args.name}` }, null, 2)}\n`);
-    return;
-  }
-
-  if (action === "press") {
-    if (!args.key) fail("--key required");
-    await withPage(async (page) => {
-      await page.keyboard.press(args.key);
-    });
-    process.stdout.write(`${JSON.stringify({ ok: true, key: args.key }, null, 2)}\n`);
-    return;
-  }
-
-  if (action === "wait") {
-    if (!args.selector) fail("--selector required");
-    const timeout = Number(args.timeout || 15_000);
-    const state = args.state || "visible";
-    await withPage(async (page) => {
-      const loc = page.locator(args.selector).first();
-      await loc.waitFor({ state, timeout });
-      if (args.text) {
+    if (msg.op === "click") {
+      await loc(page, msg).click({ timeout: 10_000 });
+      return { ok: true, clicked: msg.selector || `${msg.role}:${msg.name}` };
+    }
+    if (msg.op === "press") {
+      await page.keyboard.press(msg.key);
+      return { ok: true, key: msg.key };
+    }
+    if (msg.op === "wait") {
+      const timeout = Number(msg.timeout || 15_000);
+      const state = msg.state || "visible";
+      const l = page.locator(msg.selector).first();
+      await l.waitFor({ state, timeout });
+      if (msg.text) {
         const started = Date.now();
         for (;;) {
-          const text = await loc.innerText();
-          if (text.includes(args.text)) return;
-          if (Date.now() - started > timeout) fail(`# wait text "${args.text}" not in ${args.selector}`);
+          const text = await l.innerText();
+          if (text.includes(msg.text)) break;
+          if (Date.now() - started > timeout) throw new Error(`wait text "${msg.text}" not in ${msg.selector}`);
           await sleep(100);
         }
       }
-    });
-    process.stdout.write(`${JSON.stringify({ ok: true, selector: args.selector, state }, null, 2)}\n`);
-    return;
-  }
-
-  if (action === "expect") {
-    if (!args.selector) fail("--selector required");
-    const result = await withPage(async (page) => {
-      const loc = page.locator(args.selector).first();
-      const count = await loc.count();
+      return { ok: true, selector: msg.selector, state };
+    }
+    if (msg.op === "expect") {
+      const l = page.locator(msg.selector).first();
+      const count = await l.count();
       if (!count) return { ok: false, reason: "not found" };
-      const visible = await loc.isVisible();
-      const text = await loc.innerText().catch(() => "");
-      if (args.state === "hidden" && visible) return { ok: false, reason: "visible", text };
-      if (args.state === "visible" && !visible) return { ok: false, reason: "hidden", text };
-      if (args.text && !text.includes(args.text)) return { ok: false, reason: `missing text ${args.text}`, text };
+      const visible = await l.isVisible();
+      const text = await l.innerText().catch(() => "");
+      if (msg.state === "hidden" && visible) return { ok: false, reason: "visible", text };
+      if (msg.state === "visible" && !visible) return { ok: false, reason: "hidden", text };
+      if (msg.text && !text.includes(msg.text)) return { ok: false, reason: `missing text ${msg.text}`, text };
       return { ok: true, visible, text };
-    });
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    if (!result.ok) process.exit(1);
-    return;
-  }
-
-  if (action === "text") {
-    if (!args.selector) fail("--selector required");
-    const text = await withPage((page) => locator(page, args).innerText());
-    process.stdout.write(`${text}\n`);
-    return;
-  }
-
-  if (action === "snapshot") {
-    if (!args.path) fail("--path required");
-    const out = resolvePath(args.path);
-    mkdirSync(dirname(out), { recursive: true });
-    const dump = await withPage(async (page) => {
+    }
+    if (msg.op === "text") {
+      const text = await loc(page, msg).innerText();
+      return { ok: true, text };
+    }
+    if (msg.op === "snapshot") {
+      const out = resolvePath(msg.path);
+      mkdirSync(dirname(out), { recursive: true });
+      let dump;
       try {
-        return await page.locator("body").ariaSnapshot();
+        dump = await page.locator("body").ariaSnapshot();
       } catch {
-        return page.evaluate(() => {
+        dump = await page.evaluate(() => {
           const bits = [];
           for (const el of document.querySelectorAll("h1,h2,button,a,label,[id]")) {
             if (!(el instanceof HTMLElement)) continue;
@@ -621,22 +635,57 @@ async function cmdBrowser(args) {
           return bits.join("\n");
         });
       }
-    });
-    writeFileSync(out, `${dump}\n`);
-    stampMeta(out, args);
-    process.stdout.write(`${JSON.stringify({ ok: true, path: out }, null, 2)}\n`);
-    return;
+      writeFileSync(out, `${dump}\n`);
+      stampMeta(out, msg);
+      return { ok: true, path: out };
+    }
+    if (msg.op === "screenshot") {
+      const out = resolvePath(msg.path);
+      mkdirSync(dirname(out), { recursive: true });
+      await page.screenshot({ path: out, fullPage: true });
+      stampMeta(out, msg);
+      return { ok: true, path: out };
+    }
+    if (msg.op === "quit") {
+      setTimeout(() => process.exit(0), 50);
+      return { ok: true };
+    }
+    throw new Error(`unknown op ${msg.op}`);
   }
 
-  if (action === "screenshot") {
-    if (!args.path) fail("--path required");
-    const out = resolvePath(args.path);
-    mkdirSync(dirname(out), { recursive: true });
-    await withPage((page) => page.screenshot({ path: out, fullPage: true }));
-    stampMeta(out, args);
-    process.stdout.write(`${JSON.stringify({ ok: true, path: out }, null, 2)}\n`);
-    return;
-  }
+  rmSync(p.sock, { force: true });
+  const server = net.createServer((sock) => {
+    let buf = "";
+    sock.on("data", async (chunk) => {
+      buf += chunk;
+      const nl = buf.indexOf("\n");
+      if (nl === -1) return;
+      const line = buf.slice(0, nl);
+      buf = buf.slice(nl + 1);
+      let result;
+      try {
+        result = await handle(JSON.parse(line));
+      } catch (err) {
+        result = { ok: false, error: err.message || String(err) };
+      }
+      try {
+        sock.end(`${JSON.stringify(result)}\n`);
+      } catch {
+        /* closed */
+      }
+    });
+  });
+
+  await new Promise((resolve, reject) => {
+    server.listen(p.sock, resolve);
+    server.on("error", reject);
+  });
+}
+
+async function cmdBrowser(args) {
+  const action = args._[1];
+  if (!action) fail("browser needs a subcommand (start|goto|click|press|wait|expect|text|snapshot|screenshot|json)");
+  if (action === "start") return cmdBrowserStart(args);
 
   if (action === "json") {
     const inst = loadInstanceOrFail();
@@ -647,46 +696,74 @@ async function cmdBrowser(args) {
     return;
   }
 
-  fail(`Unknown browser action: ${action}`);
-}
-
-function resolvePath(p) {
-  return isAbsolute(p) ? p : resolve(process.cwd(), p);
+  const msg = {
+    op: action,
+    path: args.path,
+    selector: args.selector,
+    role: args.role,
+    name: args.name,
+    key: args.key,
+    state: args.state,
+    text: args.text,
+    timeout: args.timeout,
+    feature: args.feature,
+    entry: args.entry,
+  };
+  const result = await rpc(msg, Number(args.timeout || 25_000) + 5_000);
+  if (action === "text") {
+    if (!result.ok) fail(result.error || result.reason || "text failed");
+    process.stdout.write(`${result.text}\n`);
+    return;
+  }
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  if (!result.ok) process.exit(1);
 }
 
 function cmdEvidenceInit(args) {
   const id = String(args.id || new Date().toISOString().replace(/[:.]/g, "-"));
   const dir = join(skillRoot(), "evidence", id);
   mkdirSync(dir, { recursive: true });
-  const meta = {
+  writeJson(join(dir, "meta.json"), {
     id,
     createdAt: new Date().toISOString(),
     feature: args.feature || null,
     entry: args.entry || null,
-  };
-  writeJson(join(dir, "meta.json"), meta);
+  });
   process.stdout.write(`${dir}\n`);
 }
 
 function killTree(pid) {
-  if (!pid || !pidAlive(pid)) return;
+  if (!pid) return;
+  const all = collectDescendants(pid);
   try {
     process.kill(-pid, "SIGTERM");
   } catch {
+    /* not a group leader */
+  }
+  for (const p of all) {
     try {
-      process.kill(pid, "SIGTERM");
+      process.kill(p, "SIGTERM");
     } catch {
-      /* already gone */
+      /* gone */
     }
   }
 }
 
 function cmdCleanup() {
   const p = paths();
-  const kept = [];
+  if (existsSync(p.sock)) {
+    try {
+      const client = net.createConnection(p.sock);
+      client.on("connect", () => client.end(`${JSON.stringify({ op: "quit" })}\n`));
+    } catch {
+      /* ignore */
+    }
+  }
   if (existsSync(p.browser)) {
     try {
-      killTree(readJson(p.browser).pid);
+      const b = readJson(p.browser);
+      killTree(b.daemonPid);
+      killTree(b.pid);
     } catch {
       /* ignore */
     }
@@ -700,12 +777,13 @@ function cmdCleanup() {
     }
     rmSync(p.instance, { force: true });
   }
+  rmSync(p.sock, { force: true });
   rmSync(p.chromeDir, { recursive: true, force: true });
   rmSync(p.viteLog, { force: true });
-  rmSync(join(p.home, "chrome.log"), { force: true });
+  rmSync(p.chromeLog, { force: true });
+  rmSync(p.daemonLog, { force: true });
   const evidence = join(skillRoot(), "evidence");
-  kept.push(evidence);
-  process.stdout.write(`${JSON.stringify({ ok: true, removedScratch: p.home, evidenceKept: kept }, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({ ok: true, removedScratch: p.home, evidenceKept: [evidence] }, null, 2)}\n`);
 }
 
 async function main() {
@@ -718,6 +796,7 @@ async function main() {
   if (cmd === "launch") return cmdLaunch(args);
   if (cmd === "doctor") return cmdDoctor();
   if (cmd === "browser") return cmdBrowser(args);
+  if (cmd === "__daemon") return cmdDaemon();
   if (cmd === "evidence-init") return cmdEvidenceInit(args);
   if (cmd === "cleanup") return cmdCleanup();
   fail(`Unknown command: ${cmd}`);

@@ -178,7 +178,7 @@ npm install --prefix .cursor/skills/verify-modern-money-district/helpers
 | --- | --- |
 | `launch [--port 55173] [--mode dev\|preview] [--bind 127.0.0.1]` | Start Vite; wait until `/` is 200; write `instance.json`. Refuses if this home already has a live instance or the port is foreign. |
 | `doctor` | Read-only health JSON on stdout; exit 0 only if green. |
-| `browser start [--cdp-port 55174]` | Detached system Chrome with CDP; fresh profile; connect Playwright; open one page at the instance URL. |
+| `browser start [--cdp-port 55174]` | Detached system Chrome (`/opt/google/chrome/chrome` when present) plus a long-lived Playwright daemon on `$MMD_VERIFY_HOME/browser.sock`. Fresh profile. |
 | `browser goto --path /` | `page.goto` on the instance origin + path. |
 | `browser click --selector CSS` or `--role ROLE --name NAME` | Click. Role+name uses getByRole. |
 | `browser press --key ArrowUp` | Keyboard on the page. |
