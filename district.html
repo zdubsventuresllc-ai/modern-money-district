@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Modern Money District — Stabledash Live</title>
+    <meta
+      name="description"
+      content="Walk one block on a Stabledash Live night. Play a door. Feel how modern money moves. Every line is cited to a real guest and episode."
+    />
+    <meta name="theme-color" content="#11100e" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" href="./brand/live-logo.png" />
+    <link rel="apple-touch-icon" href="./brand/live-logo.png" />
+    <link rel="preload" href="./fonts/Aspekta-500.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="./fonts/Aspekta-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="gl"></canvas>
+
+      <!-- The real Stabledash Live pre-roll: muted film behind the splash, and the feed on every TV in the block. -->
+      <video
+        id="film"
+        class="film"
+        src="./media/live-intro.mp4"
+        muted
+        loop
+        playsinline
+        autoplay
+        preload="auto"
+        aria-hidden="true"
+      ></video>
+
+      <div id="grade" class="grade" aria-hidden="true"></div>
+      <div id="grain" class="grain" aria-hidden="true"></div>
+
+      <!-- SPLASH -->
+      <div id="splash" class="sheet splash">
+        <header class="mast">
+          <img class="live-logo" src="./brand/live-logo.png" alt="Stabledash Live" />
+          <span class="mast-meta"><i class="dot"></i>Tu &amp; Th · 12PM ET</span>
+        </header>
+        <div class="sheet-inner">
+          <p class="ident">You’re watching</p>
+          <h1>The Live Show on <em>Modern Money</em></h1>
+          <p class="lede">
+            One block, four doors, real guests. Walk it, play a beat, earn the line the
+            founders actually said on air.
+          </p>
+          <div class="row">
+            <button type="button" id="enter-btn" class="btn primary">Enter the district</button>
+            <a
+              class="btn"
+              href="https://www.youtube.com/watch?v=YHFAFX757a0"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Watch Live ↗</a
+            >
+          </div>
+          <p class="fine">Phone: left thumb walks, tap a lit door. Desktop: WASD, click to look.</p>
+        </div>
+        <div class="stats" aria-label="Stabledash Live">
+          <div><strong>250+</strong><span>Interviewed</span></div>
+          <div><strong>10M+</strong><span>Impressions</span></div>
+          <div><strong>10,000+</strong><span>Subscribed</span></div>
+          <div class="powered"><span>Powered by</span><strong>Dfns</strong></div>
+        </div>
+      </div>
+
+      <!-- ONBOARD: Studio lower-third banners over the first camera walk -->
+      <div id="onboard" class="onboard hidden">
+        <div class="lower-third">
+          <p class="lt-kicker"><i class="dot"></i><span id="onboard-kicker">Live night · one block</span></p>
+          <h2 id="onboard-line" class="lt-headline">MONEY STILL WAITS ON BANK HOURS</h2>
+          <p id="onboard-text" class="lt-text"></p>
+        </div>
+        <button type="button" id="onboard-skip" class="btn ghost skip">Skip intro</button>
+      </div>
+
+      <!-- STREET HUD -->
+      <div id="hud" class="hud hidden" aria-live="polite">
+        <img class="hud-logo" src="./brand/live-logo.png" alt="" aria-hidden="true" />
+        <div id="nearest" class="hud-card">Pick a lit door</div>
+        <div id="prompt" class="prompt hidden">
+          <span class="prompt-kicker">Enter</span>
+          <span id="prompt-label">Play</span>
+        </div>
+        <p id="look-hint" class="look-hint hidden">Click the street to look around</p>
+      </div>
+
+      <!-- DOOR STING: the real MoveMe ident, one second -->
+      <div id="sting" class="sting hidden" aria-hidden="true">
+        <video id="sting-video" src="./media/moveme.mp4" muted playsinline preload="auto"></video>
+      </div>
+
+      <!-- BEAT -->
+      <div id="beat" class="sheet hidden" role="dialog" aria-modal="true">
+        <div class="sheet-inner card">
+          <p class="lt-kicker"><i class="dot"></i><span id="beat-kicker">Play the beat</span></p>
+          <h2 id="beat-title" class="lt-headline">STOREFRONT</h2>
+          <p class="lede" id="beat-lede"></p>
+          <div id="beat-stage"></div>
+          <p class="beat-status" id="beat-status"></p>
+          <div class="row">
+            <button type="button" id="beat-back" class="btn ghost">Back to street</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLAIM: the guest's name card + line -->
+      <div id="claim" class="sheet hidden" role="dialog" aria-modal="true">
+        <div class="sheet-inner card">
+          <p class="lt-kicker"><i class="dot"></i><span id="claim-kicker">You felt it</span></p>
+          <h2 id="claim-name" class="lt-headline">STOREFRONT</h2>
+          <p class="lesson" id="claim-lesson"></p>
+          <div class="namecard">
+            <p class="namecard-live">LIVE with <span id="claim-guest"></span></p>
+            <p id="claim-verify" class="verify-flag"></p>
+          </div>
+          <blockquote id="claim-text"></blockquote>
+          <p class="episode">
+            <span class="lbl">Episode</span>
+            <span id="claim-episode"></span>
+          </p>
+          <p id="claim-note" class="claim-note hidden"></p>
+          <div class="row">
+            <a
+              id="claim-episode-link"
+              class="btn primary"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Watch the episode ↗</a
+            >
+            <button type="button" id="claim-back" class="btn">Back to street</button>
+          </div>
+          <p class="placeholder-flag" id="claim-notice"></p>
+        </div>
+      </div>
+
+      <!-- ARCADE HUD -->
+      <div id="arcade-hud" class="arcade-hud hidden">
+        <div class="arcade-top">
+          <span class="arcade-title"><i class="dot"></i>Settlement Run</span>
+          <span id="arcade-clock" class="arcade-clock">T+ 00:00.0</span>
+          <span id="arcade-ghost">Ghost —</span>
+        </div>
+        <p class="arcade-coach" id="arcade-coach"></p>
+        <p class="arcade-hit hidden" id="arcade-hit"></p>
+        <div class="arcade-lanes" id="arcade-lanes">
+          <span data-lane="0">ACH</span>
+          <span data-lane="1">Cards</span>
+          <span data-lane="2" class="is-hot">USDC</span>
+        </div>
+        <p class="arcade-help">Tap left / right half to change rail · <kbd>A</kbd> <kbd>D</kbd></p>
+        <button type="button" id="arcade-exit" class="btn ghost">Exit</button>
+        <div id="countdown" class="countdown hidden">3</div>
+      </div>
+
+      <!-- ARCADE RESULT -->
+      <div id="arcade-result" class="sheet hidden" role="dialog">
+        <div class="sheet-inner card">
+          <p class="lt-kicker"><i class="dot"></i>Agent Pay Arcade</p>
+          <h2 id="result-title" class="lt-headline">SETTLED</h2>
+          <p class="result-time" id="result-time">00:00.0</p>
+          <p id="result-ghost" class="byline"></p>
+          <p id="result-tally" class="tally"></p>
+          <p class="lesson" id="result-lesson"></p>
+          <div class="namecard">
+            <p class="namecard-live">LIVE with <span id="result-byline"></span></p>
+            <p id="result-verify" class="verify-flag"></p>
+          </div>
+          <blockquote id="result-claim"></blockquote>
+          <div class="row">
+            <a
+              id="result-episode-link"
+              class="btn hidden"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Watch the episode ↗</a
+            >
+            <button type="button" id="result-copy" class="btn ghost">Copy time</button>
+          </div>
+          <div class="row">
+            <button type="button" id="result-again" class="btn primary">Run again</button>
+            <button type="button" id="result-street" class="btn">Back to street</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="touch" class="touch hidden">
+        <div id="stick" class="stick">
+          <div id="stick-knob" class="stick-knob"></div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
